@@ -13,9 +13,9 @@ and a data model ready for future AI-powered personalized learning plans.
 
 - **[CLAUDE.md](CLAUDE.md)** — project rules (read this first).
 - **[docs/specs/approved-prd.md](docs/specs/approved-prd.md)** — the canonical,
-  approved product requirements (source of truth).
+approved product requirements (source of truth).
 - **[docs/human/workflow-and-governance.md](docs/human/workflow-and-governance.md)** —
-  how we build LockIn (requirements → staged plans → bounded code → human review).
+how we build LockIn (requirements → staged plans → bounded code → human review).
 - **[docs/human/decisions.md](docs/human/decisions.md)** — decisions log.
 - **[docs/adr/](docs/adr/)** — architecture decision records.
 - **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)** — how AI involvement is tracked.
