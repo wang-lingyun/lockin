@@ -29,3 +29,6 @@ Significant architecture decisions also get a numbered ADR under `../adr/`.
 - **[Default applied, confirm] Missions model** = `ScheduleBlock` is the plan,
   `DailyMission` created lazily on read with `schedule_block_id`, nullable `task_id`
   (PRD §12). Alternative: keep calendar and missions fully separate.
+- **Stage 0 npm audit:** 7 advisories remain (esbuild via vitest dev server; postcss
+  bundled in Next). All dev/transitive, not reachable in the deployed static app; fixes
+  require breaking major bumps. Deferred — revisit when bumping Next/vitest majors.

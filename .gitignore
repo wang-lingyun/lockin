@@ -11,6 +11,8 @@ node_modules/
 out/
 dist/
 build/
+next-env.d.ts
+*.tsbuildinfo
 
 # Vercel
 .vercel/

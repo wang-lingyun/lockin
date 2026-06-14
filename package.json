@@ -1,0 +1,19 @@
+{
+  "name": "lockin",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @lockin/web",
+    "build": "npm run build -w @lockin/web",
+    "lint": "npm run lint -w @lockin/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  }
+}

@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/*
+ * LockIn theme tokens — dark / focus-mode inspired (PRD §14).
+ * Tailwind v4 reads these via @theme; expand in later stages.
+ */
+@theme {
+  --color-bg: #0b0f1a;
+  --color-surface: #141a2a;
+  --color-surface-2: #1c2438;
+  --color-border: #2a3450;
+  --color-text: #e6e9f0;
+  --color-muted: #9aa4bf;
+  --color-primary: #6366f1;
+  --color-primary-fg: #ffffff;
+  --color-accent: #22d3ee;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
