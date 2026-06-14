@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The app does not exist yet (foundation pass). This guard makes CI green
+      # until apps/web is scaffolded in Stage 0, then runs the real checks.
+      - name: Detect web app
+        id: detect
+        run: |
+          if [ -f apps/web/package.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "No apps/web yet — skipping lint/typecheck/test."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.detect.outputs.exists == 'true'
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Lint
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: apps/web
+        run: npm run lint --if-present
+
+      - name: Typecheck
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: apps/web
+        run: npm run typecheck --if-present
+
+      - name: Test
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: apps/web
+        run: npm test --if-present

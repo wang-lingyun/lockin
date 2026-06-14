@@ -1,0 +1,14 @@
+# CODEOWNERS — sensitive areas always require human review before merge.
+# Replace @wanglingyun9 with the correct GitHub handle if different.
+
+# Approved specs and decisions
+/docs/specs/                @wanglingyun9
+/docs/adr/                  @wanglingyun9
+
+# Sensitive app areas (paths reserved for when app code lands under apps/web/)
+/apps/web/db/               @wanglingyun9
+/apps/web/lib/auth/         @wanglingyun9
+/apps/web/lib/storage/      @wanglingyun9
+
+# Project rules
+/CLAUDE.md                  @wanglingyun9
