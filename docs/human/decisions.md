@@ -15,6 +15,7 @@ Significant architecture decisions also get a numbered ADR under `../adr/`.
 | 2026-06-14 | Added **Chemistry** as a (bonus) subject with seed task. | Requested. |
 | 2026-06-14 | Per-student **dated calendar** with times; missions derived on read (no cron). Supersedes the "no complex calendar" non-goal. | "Each track with its own schedule," kept free-tier safe. ADR 0006. |
 | 2026-06-14 | **AI-native admin**: one typed Admin Command API + agent gateway (MCP/webhook) in MVP; Slack + voice connectors deferred to external modules. | Manage LockIn conversationally via agents; stay Vercel-Hobby friendly. ADR 0007. |
+| 2026-06-14 | **Stage 1 vertical slice** built: `0001_init.sql` (schema + RLS + RPCs), shared zod command schemas, the command layer (`dispatch`→registry→handlers + `admin_command_log`), parent auth (login/signup/signout + middleware), parent dashboard (student switcher, today's missions, XP bar, admin forms). | First end-to-end path login→child→assign→complete→XP. UI and the future agent gateway share one validated command surface. |
 
 ## Open decisions / to revisit
 
@@ -32,3 +33,11 @@ Significant architecture decisions also get a numbered ADR under `../adr/`.
 - **Stage 0 npm audit:** 7 advisories remain (esbuild via vitest dev server; postcss
   bundled in Next). All dev/transitive, not reachable in the deployed static app; fixes
   require breaking major bumps. Deferred — revisit when bumping Next/vitest majors.
+- **Streak recalculation (Stage 1):** `students.current_streak` exists and is displayed
+  but is not yet updated (defaults 0). On-read recalculation lands with the calendar
+  (Stage 3 / ADR 0006).
+- **Middleware Edge-runtime warning:** `@supabase/ssr` triggers a benign `process.version`
+  warning in the Edge middleware build. Non-fatal, build passes; standard for this stack.
+- **Stage 1 ad-hoc missions:** `daily_missions.schedule_block_id` is null in Stage 1, so
+  the `unique(student_id, date, schedule_block_id)` constraint permits multiple ad-hoc
+  missions per day (NULLs are distinct). Schedule-block FK + dedup arrive in Stage 3.

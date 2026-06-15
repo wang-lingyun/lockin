@@ -1,7 +1,10 @@
 /**
- * @lockin/shared — domain constants and pure helpers shared by the web app and
- * (later) the command layer. Keep this dependency-free and side-effect-free.
+ * @lockin/shared — domain constants, pure helpers, and command schemas shared by
+ * the web app and the command layer. Keep this side-effect-free (zod only).
  */
+
+export * from "./commands";
+export * from "./schemas";
 
 /** XP required to reach each level (PRD §10.12). Index 0 = Level 1. */
 export const LEVEL_THRESHOLDS = [0, 100, 250, 500, 800, 1200] as const;

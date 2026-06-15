@@ -1,0 +1,57 @@
+/**
+ * Row shapes for the Stage 1 tables (mirror of `db/migrations/0001_init.sql`).
+ * Hand-maintained for now; can be replaced by `supabase gen types` later.
+ */
+
+export type Student = {
+  id: string;
+  name: string;
+  grade: string | null;
+  avatar: string | null;
+  current_xp: number;
+  current_level: number;
+  current_streak: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Subject = {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
+  is_default: boolean;
+  owner_parent_id: string | null;
+};
+
+export type Task = {
+  id: string;
+  title: string;
+  description: string | null;
+  subject_id: string | null;
+  xp_value: number;
+  estimated_minutes: number | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type MissionStatus = "not_started" | "in_progress" | "completed";
+
+export type DailyMission = {
+  id: string;
+  student_id: string;
+  task_id: string | null;
+  subject_id: string | null;
+  schedule_block_id: string | null;
+  date: string;
+  status: MissionStatus;
+  xp_awarded: number;
+  completed_at: string | null;
+};
+
+/** A mission joined with its task + subject, as shown on the dashboard. */
+export type MissionWithTask = DailyMission & {
+  task: Pick<Task, "id" | "title" | "xp_value"> | null;
+  subject: Pick<Subject, "id" | "name" | "color"> | null;
+};
