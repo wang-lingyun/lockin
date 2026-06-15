@@ -17,6 +17,11 @@ import type {
   WeeklyGoalIncrementInput,
   HomeworkSubmitInput,
   HomeworkReviewInput,
+  MistakeCreateInput,
+  MistakeUpdateInput,
+  MistakeDeleteInput,
+  ReflectionCreateInput,
+  ReflectionUpdateInput,
 } from "@lockin/shared";
 import { homeworkSourceType } from "@lockin/shared";
 import type {
@@ -30,6 +35,8 @@ import type {
   ScheduleBlock,
   WeeklyGoal,
   HomeworkSubmission,
+  MistakeBankEntry,
+  Reflection,
 } from "@/lib/db/types";
 import type { CommandContext } from "./types";
 
@@ -471,4 +478,130 @@ export async function homeworkReview(
     .single();
   if (error) throw new Error(error.message);
   return data as HomeworkSubmission;
+}
+
+/** Create a mistake-bank entry (AC 17). RLS enforces ownership on insert. */
+export async function mistakeCreate(
+  input: MistakeCreateInput,
+  ctx: CommandContext,
+): Promise<MistakeBankEntry> {
+  const { data, error } = await ctx.supabase
+    .from("mistake_bank_entries")
+    .insert({
+      student_id: input.studentId,
+      subject_id: input.subjectId ?? null,
+      subject_track_id: input.subjectTrackId ?? null,
+      homework_submission_id: input.homeworkSubmissionId ?? null,
+      title: input.title ?? null,
+      topic: input.topic ?? null,
+      mistake_description: input.mistakeDescription ?? null,
+      correct_idea: input.correctIdea ?? null,
+      mistake_type: input.mistakeType ?? null,
+      retry_date: input.retryDate ?? null,
+      status: input.status,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as MistakeBankEntry;
+}
+
+export async function mistakeUpdate(
+  input: MistakeUpdateInput,
+  ctx: CommandContext,
+): Promise<MistakeBankEntry> {
+  const { id, ...rest } = input;
+  // Map camelCase input keys to snake_case columns, including explicit nulls.
+  const patch: Record<string, unknown> = {};
+  const map: Record<string, string> = {
+    subjectId: "subject_id",
+    subjectTrackId: "subject_track_id",
+    homeworkSubmissionId: "homework_submission_id",
+    title: "title",
+    topic: "topic",
+    mistakeDescription: "mistake_description",
+    correctIdea: "correct_idea",
+    mistakeType: "mistake_type",
+    retryDate: "retry_date",
+    status: "status",
+  };
+  for (const [k, v] of Object.entries(rest)) {
+    if (v !== undefined) patch[map[k]] = v;
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("mistake_bank_entries")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as MistakeBankEntry;
+}
+
+export async function mistakeDelete(
+  input: MistakeDeleteInput,
+  ctx: CommandContext,
+): Promise<{ id: string }> {
+  const { error } = await ctx.supabase
+    .from("mistake_bank_entries")
+    .delete()
+    .eq("id", input.id);
+  if (error) throw new Error(error.message);
+  return { id: input.id };
+}
+
+/**
+ * Create a daily reflection (AC 20). Only set `date` when provided so the column
+ * default (today, Pacific) applies — inserting an explicit null would violate
+ * NOT NULL (cf. the homework `submission_date` fix).
+ */
+export async function reflectionCreate(
+  input: ReflectionCreateInput,
+  ctx: CommandContext,
+): Promise<Reflection> {
+  const row: Record<string, unknown> = {
+    student_id: input.studentId,
+    what_finished: input.whatFinished ?? null,
+    what_was_hard: input.whatWasHard ?? null,
+    what_learned: input.whatLearned ?? null,
+    what_to_do_next: input.whatToDoNext ?? null,
+  };
+  if (input.date) row.date = input.date;
+
+  const { data, error } = await ctx.supabase
+    .from("reflections")
+    .insert(row)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Reflection;
+}
+
+export async function reflectionUpdate(
+  input: ReflectionUpdateInput,
+  ctx: CommandContext,
+): Promise<Reflection> {
+  const { id, ...rest } = input;
+  // Map camelCase input keys to snake_case columns, including explicit nulls.
+  const patch: Record<string, unknown> = {};
+  const map: Record<string, string> = {
+    whatFinished: "what_finished",
+    whatWasHard: "what_was_hard",
+    whatLearned: "what_learned",
+    whatToDoNext: "what_to_do_next",
+    parentComment: "parent_comment",
+  };
+  for (const [k, v] of Object.entries(rest)) {
+    if (v !== undefined) patch[map[k]] = v;
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("reflections")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Reflection;
 }

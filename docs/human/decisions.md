@@ -24,6 +24,8 @@ Significant architecture decisions also get a numbered ADR under `../adr/`.
 | 2026-06-14 | **Homework attachments via Supabase Storage** (ADR 0008, amends ADR 0003): private `homework` bucket, browser→Storage uploads via signed URLs (never through Vercel functions), Storage RLS via `owns_student()`, metadata-only in Postgres (`homework_submissions` + `homework_attachments`). Decided: images + PDF only (PNG/JPG/HEIC/PDF), **5 MB**/file, one submission = text and/or multiple attachments. Reserved nullable `url` column for a future Google Drive / external-link connector. | Parent wants real homework capture (photos of handwritten work, scanned PDFs) within Vercel-Hobby/Supabase-Free limits. Drive API rejected for MVP (OAuth + server hop); link-only deferred. |
 | 2026-06-14 | **App timezone = Pacific** (`America/Los_Angeles`, DST-aware). `lib/date.ts` `todayISO()` now returns the Pacific calendar day, so today's missions, the Quest Board week, the schedule, and the weekly XP window all use the family's local day; the homework `submission_date` DB default is set to Pacific to match (`0006_…`). | The household is in Pacific; UTC `today` mis-dated late-evening activity by a day. Replaces the Stage-1/3 UTC-day assumption for a single-household MVP. Per-student timezones remain deferred (ADR 0006). |
 | 2026-06-14 | **Stage 5 Homework Inbox** built (ADR 0008): `0005_homework.sql` (`homework_submissions` + `homework_attachments` + private `homework` Storage bucket + Storage RLS), 2 new commands (`homework.submit`, `homework.review`), `/homework` inbox (text + image/PDF submission via direct browser→Storage upload, paginated list with signed-URL previews, parent review panel), dashboard "to review" count + Homework link. Security review committed at `docs/specs/stage5-homework-security-review.md`. | Closes AC 14/15/16/29/30 (homework capture + review, AI-ready, file upload enabled) within free-tier limits. Decided: review_status = submitted/reviewed/needs_correction/mastered (PRD §10.8); `source_type` derived (pdf>photo>text); 5 MB/images+PDF enforced at client+schema+bucket; AI fields stored but never processed. |
+| 2026-06-14 | **Stage 6 Mistake/Revision Bank + Reflections** built: `0007_mistakes_reflections.sql` (`mistake_bank_entries` + `reflections`, RLS, `updated_at` triggers, `reflections` unique per student/day, mistake→homework FK), 5 new commands (`mistake.create/update/delete`, `reflection.create/update`), `/mistakes` (entry form with optional homework link + status lifecycle) and `/reflections` (today's 4-prompt card create/edit + history with parent comments) pages, dashboard Mistakes/Reflections links + "to revisit" chip. | Closes AC 17/18/20 (create mistakes, link to homework, daily reflections). Spec-driven on established patterns (on-read derivation ADR 0006, command surface ADR 0007) → no new ADR. Decided: mistake_type is free text; reflections are one-per-day (editable, not duplicated); XP rewards for reflections/mistake-corrections deferred (mirrors Stage 4's "separate from XP"). |
+| 2026-06-14 | **Streak now computed on read** (PRD §10.12): a day qualifies if the student wrote a reflection **OR** completed at least one mission; `lib/streak/computeStreak.ts` counts consecutive qualifying days ending today (today-in-progress doesn't break it), bounded to a 400-day window. The dashboard renders this; the stored `students.current_streak` column becomes a deprecated snapshot. | Lights up the long-deferred streak without a cron or a write-on-read (ADR 0006). The "reflection or mission" rule is the MVP's fixed "minimum daily requirement"; a per-student configurable threshold is deferred. |
 
 ## Open decisions / to revisit
 
@@ -41,9 +43,10 @@ Significant architecture decisions also get a numbered ADR under `../adr/`.
 - **Stage 0 npm audit:** 7 advisories remain (esbuild via vitest dev server; postcss
   bundled in Next). All dev/transitive, not reachable in the deployed static app; fixes
   require breaking major bumps. Deferred — revisit when bumping Next/vitest majors.
-- **Streak recalculation (Stage 1):** `students.current_streak` exists and is displayed
-  but is not yet updated (defaults 0). On-read recalculation lands with the calendar
-  (Stage 3 / ADR 0006).
+- ~~**Streak recalculation (Stage 1):** `students.current_streak` exists and is displayed
+  but is not yet updated (defaults 0).~~ **Resolved (Stage 6):** computed on read in
+  `lib/streak/computeStreak.ts` (qualifying day = reflection or completed mission); the
+  stored column is now a deprecated snapshot.
 - **Middleware Edge-runtime warning:** `@supabase/ssr` triggers a benign `process.version`
   warning in the Edge middleware build. Non-fatal, build passes; standard for this stack.
 - **Stage 1 ad-hoc missions:** `daily_missions.schedule_block_id` is null in Stage 1, so
@@ -55,9 +58,15 @@ Significant architecture decisions also get a numbered ADR under `../adr/`.
   current day is correct for a Pacific household, but a block's clock time may read shifted.
   Full per-instant timezone correctness (and per-student timezones) is still deferred; the
   schema stores `timestamptz`, so only read-time conversion is needed later.
-- **Streak recalculation (Stage 3):** still not implemented — `current_streak` stays a
-  displayed default. Now that the calendar exists it can be recomputed on read from
-  completed missions; tracked for a later stage.
+- ~~**Streak recalculation (Stage 3):** still not implemented — `current_streak` stays a
+  displayed default.~~ **Resolved (Stage 6):** see above — computed on read.
+- **Streak threshold configurability (Stage 6):** the qualifying rule is fixed
+  (reflection OR ≥1 completed mission). PRD §10.12 envisions a "configurable minimum
+  daily requirement" per student; deferred until there's a settings surface for it.
+- **XP for reflections / mistake-corrections (Stage 6):** PRD §10.12 lists reflection = 5
+  XP and mistake correction = 10 XP, but Stage 6 does **not** award XP for either (no
+  `xp_events` writes). Mirrors Stage 4's "goals are separate from XP." Revisit alongside
+  the gamification/analytics pass; would also reopen edit/un-master re-award semantics.
 - **Weekly goal auto-progress (Stage 4):** goal `current_value` is bumped manually
   (`increment_weekly_goal`). Auto-deriving progress from completed missions/homework (e.g.
   "+1 per AoPS mission") is deferred — would link `weekly_goals` to a metric source; revisit

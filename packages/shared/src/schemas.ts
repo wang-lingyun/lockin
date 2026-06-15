@@ -268,3 +268,96 @@ export function homeworkSourceType(
   if (attachments.some((a) => a.mimeType.startsWith("image/"))) return "photo";
   return "text";
 }
+
+/**
+ * Mistake/Revision Bank (PRD §10.9). An entry's lifecycle: `needs_review` →
+ * `reviewed` → `mastered`. Absence of a row simply means no tracked mistake.
+ */
+export const MISTAKE_STATUSES = [
+  "needs_review",
+  "reviewed",
+  "mastered",
+] as const;
+export const MistakeStatus = z.enum(MISTAKE_STATUSES);
+export type MistakeStatus = z.infer<typeof MistakeStatus>;
+
+/**
+ * Create a mistake-bank entry for a student (AC 17). Optional subject/track
+ * attribution (ADR 0005) and an optional link back to the homework submission it
+ * came from (AC 18). An entry must carry at least a title or a description, so we
+ * never store a blank row.
+ */
+export const MistakeCreateInput = z
+  .object({
+    studentId: uuid,
+    subjectId: uuid.optional(),
+    subjectTrackId: uuid.optional(),
+    homeworkSubmissionId: uuid.optional(),
+    title: z.string().trim().max(200).optional(),
+    topic: z.string().trim().max(120).optional(),
+    mistakeDescription: z.string().trim().max(5000).optional(),
+    correctIdea: z.string().trim().max(5000).optional(),
+    mistakeType: z.string().trim().max(80).optional(),
+    retryDate: isoDate.optional(),
+    status: MistakeStatus.default("needs_review"),
+  })
+  .refine(
+    (m) => (m.title?.length ?? 0) > 0 || (m.mistakeDescription?.length ?? 0) > 0,
+    { message: "a mistake needs a title or a description" },
+  );
+export type MistakeCreateInput = z.infer<typeof MistakeCreateInput>;
+
+/** Partial update of a mistake-bank entry (by id), including status changes. */
+export const MistakeUpdateInput = z.object({
+  id: uuid,
+  subjectId: uuid.nullable().optional(),
+  subjectTrackId: uuid.nullable().optional(),
+  homeworkSubmissionId: uuid.nullable().optional(),
+  title: z.string().trim().max(200).nullable().optional(),
+  topic: z.string().trim().max(120).nullable().optional(),
+  mistakeDescription: z.string().trim().max(5000).nullable().optional(),
+  correctIdea: z.string().trim().max(5000).nullable().optional(),
+  mistakeType: z.string().trim().max(80).nullable().optional(),
+  retryDate: isoDate.nullable().optional(),
+  status: MistakeStatus.optional(),
+});
+export type MistakeUpdateInput = z.infer<typeof MistakeUpdateInput>;
+
+export const MistakeDeleteInput = z.object({ id: uuid });
+export type MistakeDeleteInput = z.infer<typeof MistakeDeleteInput>;
+
+/**
+ * Daily reflection (PRD §10.11, AC 20). The four prompts are: what did I finish,
+ * what was hard, what did I learn, what should I do next. At least one must be
+ * filled. `date` defaults to today (Pacific) server-side; one reflection per day
+ * (DB unique on student_id+date) — re-saving the same day edits via update.
+ */
+export const ReflectionCreateInput = z
+  .object({
+    studentId: uuid,
+    date: isoDate.optional(),
+    whatFinished: z.string().trim().max(4000).optional(),
+    whatWasHard: z.string().trim().max(4000).optional(),
+    whatLearned: z.string().trim().max(4000).optional(),
+    whatToDoNext: z.string().trim().max(4000).optional(),
+  })
+  .refine(
+    (r) =>
+      (r.whatFinished?.length ?? 0) > 0 ||
+      (r.whatWasHard?.length ?? 0) > 0 ||
+      (r.whatLearned?.length ?? 0) > 0 ||
+      (r.whatToDoNext?.length ?? 0) > 0,
+    { message: "write at least one part of the reflection" },
+  );
+export type ReflectionCreateInput = z.infer<typeof ReflectionCreateInput>;
+
+/** Partial update of a reflection (by id): student prompts and/or parent comment. */
+export const ReflectionUpdateInput = z.object({
+  id: uuid,
+  whatFinished: z.string().trim().max(4000).nullable().optional(),
+  whatWasHard: z.string().trim().max(4000).nullable().optional(),
+  whatLearned: z.string().trim().max(4000).nullable().optional(),
+  whatToDoNext: z.string().trim().max(4000).nullable().optional(),
+  parentComment: z.string().trim().max(4000).nullable().optional(),
+});
+export type ReflectionUpdateInput = z.infer<typeof ReflectionUpdateInput>;

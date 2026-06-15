@@ -10,6 +10,7 @@ import { AssignTaskForm } from "./_components/AssignTaskForm";
 import { getTodaysMissions } from "@/lib/missions/getTodaysMissions";
 import { weekStartFor } from "@/lib/missions/recurrence";
 import { goalProgressPercent } from "@/lib/goals/progress";
+import { computeStreak } from "@/lib/streak/computeStreak";
 import type { Student, WeeklyGoal } from "@/lib/db/types";
 
 export default async function Dashboard({
@@ -42,13 +43,24 @@ export default async function Dashboard({
   let weeklyXp = 0;
   let weeklyGoals: WeeklyGoal[] = [];
   let toReview = 0;
+  let toRevisit = 0;
+  let streak = 0;
   if (active) {
+    streak = await computeStreak(supabase, active.id, today);
+
     const { count } = await supabase
       .from("homework_submissions")
       .select("id", { count: "exact", head: true })
       .eq("student_id", active.id)
       .eq("review_status", "submitted");
     toReview = count ?? 0;
+
+    const { count: revisitCount } = await supabase
+      .from("mistake_bank_entries")
+      .select("id", { count: "exact", head: true })
+      .eq("student_id", active.id)
+      .eq("status", "needs_review");
+    toRevisit = revisitCount ?? 0;
 
     const { data: xpRows } = await supabase
       .from("xp_events")
@@ -93,6 +105,18 @@ export default async function Dashboard({
             className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
           >
             Homework
+          </Link>
+          <Link
+            href="/mistakes"
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
+          >
+            Mistakes
+          </Link>
+          <Link
+            href="/reflections"
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
+          >
+            Reflections
           </Link>
           <Link
             href="/quests"
@@ -165,10 +189,15 @@ export default async function Dashboard({
                 </h2>
                 <span className="flex items-center gap-3 text-sm text-muted">
                   <span>⚡ +{weeklyXp} XP this week</span>
-                  <span>🔥 {active.current_streak} day streak</span>
+                  <span>🔥 {streak} day streak</span>
                   {toReview > 0 ? (
                     <Link href="/homework" className="text-accent hover:underline">
                       📥 {toReview} to review
+                    </Link>
+                  ) : null}
+                  {toRevisit > 0 ? (
+                    <Link href="/mistakes" className="text-accent hover:underline">
+                      📝 {toRevisit} to revisit
                     </Link>
                   ) : null}
                 </span>

@@ -18,6 +18,11 @@ import {
   WeeklyGoalIncrementInput,
   HomeworkSubmitInput,
   HomeworkReviewInput,
+  MistakeCreateInput,
+  MistakeUpdateInput,
+  MistakeDeleteInput,
+  ReflectionCreateInput,
+  ReflectionUpdateInput,
   type CommandName,
 } from "@lockin/shared";
 import type { CommandDefinition } from "./types";
@@ -40,6 +45,11 @@ import {
   weeklyGoalIncrement,
   homeworkSubmit,
   homeworkReview,
+  mistakeCreate,
+  mistakeUpdate,
+  mistakeDelete,
+  reflectionCreate,
+  reflectionUpdate,
 } from "./handlers";
 
 type AnyHandler = CommandDefinition<unknown, unknown>["handler"];
@@ -121,5 +131,25 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
   [COMMANDS.homeworkReview]: {
     schema: HomeworkReviewInput,
     handler: homeworkReview as AnyHandler,
+  },
+  [COMMANDS.mistakeCreate]: {
+    schema: MistakeCreateInput,
+    handler: mistakeCreate as AnyHandler,
+  },
+  [COMMANDS.mistakeUpdate]: {
+    schema: MistakeUpdateInput,
+    handler: mistakeUpdate as AnyHandler,
+  },
+  [COMMANDS.mistakeDelete]: {
+    schema: MistakeDeleteInput,
+    handler: mistakeDelete as AnyHandler,
+  },
+  [COMMANDS.reflectionCreate]: {
+    schema: ReflectionCreateInput,
+    handler: reflectionCreate as AnyHandler,
+  },
+  [COMMANDS.reflectionUpdate]: {
+    schema: ReflectionUpdateInput,
+    handler: reflectionUpdate as AnyHandler,
   },
 };

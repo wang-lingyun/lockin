@@ -22,6 +22,11 @@ export const COMMANDS = {
   weeklyGoalIncrement: "weeklyGoal.incrementProgress",
   homeworkSubmit: "homework.submit",
   homeworkReview: "homework.review",
+  mistakeCreate: "mistake.create",
+  mistakeUpdate: "mistake.update",
+  mistakeDelete: "mistake.delete",
+  reflectionCreate: "reflection.create",
+  reflectionUpdate: "reflection.update",
 } as const;
 
 export type CommandName = (typeof COMMANDS)[keyof typeof COMMANDS];

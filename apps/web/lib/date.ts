@@ -21,3 +21,14 @@ export function todayISO(): string {
     day: "2-digit",
   }).format(new Date());
 }
+
+/**
+ * The calendar day before an ISO date (YYYY-MM-DD), as an ISO date. Pure: parses
+ * the date at UTC noon and subtracts a day, so it's immune to DST and only walks
+ * calendar dates (used by the streak computation). Crosses month/year boundaries.
+ */
+export function previousISODate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const t = Date.UTC(y, m - 1, d) - 24 * 60 * 60 * 1000;
+  return new Date(t).toISOString().slice(0, 10);
+}

@@ -163,6 +163,48 @@ export type HomeworkSubmissionRow = HomeworkSubmission & {
   attachments: HomeworkAttachment[];
 };
 
+export type MistakeStatus = "needs_review" | "reviewed" | "mastered";
+
+export type MistakeBankEntry = {
+  id: string;
+  student_id: string;
+  subject_id: string | null;
+  subject_track_id: string | null;
+  homework_submission_id: string | null;
+  title: string | null;
+  topic: string | null;
+  mistake_description: string | null;
+  correct_idea: string | null;
+  mistake_type: string | null;
+  retry_date: string | null;
+  status: MistakeStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+/** A mistake-bank entry joined with its subject/track and linked homework. */
+export type MistakeBankEntryRow = MistakeBankEntry & {
+  subject: Pick<Subject, "id" | "name" | "color"> | null;
+  track: Pick<SubjectTrack, "id" | "name" | "color"> | null;
+  homework: Pick<
+    HomeworkSubmission,
+    "id" | "assignment_title" | "topic" | "submission_date"
+  > | null;
+};
+
+export type Reflection = {
+  id: string;
+  student_id: string;
+  date: string;
+  what_finished: string | null;
+  what_was_hard: string | null;
+  what_learned: string | null;
+  what_to_do_next: string | null;
+  parent_comment: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type MissionStatus = "not_started" | "in_progress" | "completed";
 
 export type DailyMission = {
