@@ -10,8 +10,9 @@ import { AssignTaskForm } from "./_components/AssignTaskForm";
 import { getTodaysMissions } from "@/lib/missions/getTodaysMissions";
 import { weekStartFor } from "@/lib/missions/recurrence";
 import { goalProgressPercent } from "@/lib/goals/progress";
-import { computeStreak } from "@/lib/streak/computeStreak";
-import type { Student, WeeklyGoal } from "@/lib/db/types";
+import { studentGlance, type StudentGlance } from "@/lib/dashboard/glance";
+import { rewardUnlocked } from "@lockin/shared";
+import type { Student, WeeklyGoal, Reflection, Reward } from "@/lib/db/types";
 
 export default async function Dashboard({
   searchParams,
@@ -32,6 +33,13 @@ export default async function Dashboard({
   const active =
     students.find((s) => s.id === sp.student) ?? students[0] ?? null;
 
+  // All-students-at-a-glance (PRD §10.1): level, streak, today's completion, and
+  // attention counts for every student. Read-time aggregates (no cron).
+  const glances = await Promise.all(
+    students.map((s) => studentGlance(supabase, s, today)),
+  );
+  const activeGlance = glances.find((g) => g.student.id === active?.id) ?? null;
+
   // Today's missions: persisted + virtual (derived from schedule blocks on read).
   const missions = active
     ? await getTodaysMissions(supabase, active.id, today)
@@ -42,26 +50,14 @@ export default async function Dashboard({
   const weekStart = weekStartFor(today);
   let weeklyXp = 0;
   let weeklyGoals: WeeklyGoal[] = [];
-  let toReview = 0;
-  let toRevisit = 0;
-  let streak = 0;
+  let recentReflection: Reflection | null = null;
+  let nextReward: Reward | null = null;
+  const streak = activeGlance?.streak ?? 0;
+  const toReview = activeGlance?.toReview ?? 0;
+  const toRevisit = activeGlance?.toRevisit ?? 0;
+  const missionsDone = activeGlance?.missionsDone ?? 0;
+  const missionsTotal = activeGlance?.missionsTotal ?? 0;
   if (active) {
-    streak = await computeStreak(supabase, active.id, today);
-
-    const { count } = await supabase
-      .from("homework_submissions")
-      .select("id", { count: "exact", head: true })
-      .eq("student_id", active.id)
-      .eq("review_status", "submitted");
-    toReview = count ?? 0;
-
-    const { count: revisitCount } = await supabase
-      .from("mistake_bank_entries")
-      .select("id", { count: "exact", head: true })
-      .eq("student_id", active.id)
-      .eq("status", "needs_review");
-    toRevisit = revisitCount ?? 0;
-
     const { data: xpRows } = await supabase
       .from("xp_events")
       .select("amount")
@@ -80,6 +76,27 @@ export default async function Dashboard({
       .neq("status", "archived")
       .order("created_at", { ascending: true });
     weeklyGoals = (goalRows ?? []) as WeeklyGoal[];
+
+    const { data: reflectionRow } = await supabase
+      .from("reflections")
+      .select("*")
+      .eq("student_id", active.id)
+      .order("date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    recentReflection = (reflectionRow as Reflection | null) ?? null;
+
+    // Next reward (PRD §10.12): the nearest still-locked reward by XP threshold.
+    const { data: rewardRows } = await supabase
+      .from("rewards")
+      .select("*")
+      .eq("student_id", active.id)
+      .not("required_xp", "is", null)
+      .order("required_xp", { ascending: true });
+    nextReward =
+      ((rewardRows ?? []) as Reward[]).find(
+        (r) => !rewardUnlocked(r.required_xp, active.current_xp),
+      ) ?? null;
   }
 
   const { data: subjects } = await supabase
@@ -117,6 +134,18 @@ export default async function Dashboard({
             className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
           >
             Reflections
+          </Link>
+          <Link
+            href="/coding"
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
+          >
+            Coding
+          </Link>
+          <Link
+            href="/rewards"
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
+          >
+            Rewards
           </Link>
           <Link
             href="/quests"
@@ -176,6 +205,8 @@ export default async function Dashboard({
             })}
           </nav>
 
+          {students.length > 1 ? <GlanceStrip glances={glances} /> : null}
+
           {active ? (
             <section className="mb-8 rounded-xl border border-border bg-surface p-6">
               <div className="mb-4 flex items-center justify-between">
@@ -190,6 +221,9 @@ export default async function Dashboard({
                 <span className="flex items-center gap-3 text-sm text-muted">
                   <span>⚡ +{weeklyXp} XP this week</span>
                   <span>🔥 {streak} day streak</span>
+                  <span>
+                    ✅ {missionsDone}/{missionsTotal} today
+                  </span>
                   {toReview > 0 ? (
                     <Link href="/homework" className="text-accent hover:underline">
                       📥 {toReview} to review
@@ -204,6 +238,24 @@ export default async function Dashboard({
               </div>
 
               <XpBar xp={active.current_xp} />
+
+              {nextReward ? (
+                <Link
+                  href="/rewards"
+                  className="mt-3 flex items-center justify-between rounded-lg bg-surface-2 px-4 py-2.5 text-sm hover:opacity-90"
+                >
+                  <span className="text-text">
+                    🎁 Next reward: {nextReward.title}
+                  </span>
+                  <span className="text-muted">
+                    {Math.max(
+                      0,
+                      (nextReward.required_xp ?? 0) - active.current_xp,
+                    )}{" "}
+                    XP to go
+                  </span>
+                </Link>
+              ) : null}
 
               <h3 className="mb-2 mt-6 text-sm font-semibold uppercase tracking-wide text-muted">
                 Today&apos;s missions
@@ -339,6 +391,44 @@ export default async function Dashboard({
                   })}
                 </ul>
               )}
+
+              <div className="mb-2 mt-6 flex items-center justify-between">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">
+                  Latest reflection
+                </h3>
+                <Link
+                  href="/reflections"
+                  className="text-xs text-muted hover:text-text"
+                >
+                  Reflections →
+                </Link>
+              </div>
+              {recentReflection ? (
+                <Link
+                  href="/reflections"
+                  className="block rounded-lg bg-surface-2 px-4 py-3 hover:opacity-90"
+                >
+                  <p className="text-xs text-muted">{recentReflection.date}</p>
+                  <p className="mt-1 line-clamp-2 text-sm text-text">
+                    {recentReflection.what_learned ??
+                      recentReflection.what_finished ??
+                      recentReflection.what_was_hard ??
+                      recentReflection.what_to_do_next ??
+                      "—"}
+                  </p>
+                </Link>
+              ) : (
+                <p className="text-sm text-muted">
+                  No reflections yet.{" "}
+                  <Link
+                    href="/reflections"
+                    className="text-accent hover:underline"
+                  >
+                    Write one
+                  </Link>
+                  .
+                </p>
+              )}
             </section>
           ) : null}
 
@@ -378,5 +468,33 @@ function Panel({
       <h2 className="mb-3 text-sm font-semibold text-text">{title}</h2>
       {children}
     </div>
+  );
+}
+
+/** All students at a glance (PRD §10.1): one compact card per student. */
+function GlanceStrip({ glances }: { glances: StudentGlance[] }) {
+  return (
+    <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {glances.map((g) => (
+        <Link
+          key={g.student.id}
+          href={`/?student=${g.student.id}`}
+          className="rounded-xl border border-border bg-surface p-4 hover:border-primary"
+        >
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-text">{g.student.name}</span>
+            <span className="text-xs text-muted">Level {g.level}</span>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+            <span>✅ {g.missionsDone}/{g.missionsTotal} today</span>
+            <span>🔥 {g.streak}d</span>
+            {g.toReview > 0 ? <span className="text-accent">📥 {g.toReview}</span> : null}
+            {g.toRevisit > 0 ? (
+              <span className="text-accent">📝 {g.toRevisit}</span>
+            ) : null}
+          </div>
+        </Link>
+      ))}
+    </section>
   );
 }

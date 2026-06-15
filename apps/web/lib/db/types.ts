@@ -205,6 +205,52 @@ export type Reflection = {
   updated_at: string;
 };
 
+export type CodingProjectStatus = "active" | "completed" | "archived";
+export type CodingFeatureStatus = "not_started" | "in_progress" | "completed";
+
+export type CodingProject = {
+  id: string;
+  student_id: string;
+  project_name: string;
+  goal: string | null;
+  description: string | null;
+  status: CodingProjectStatus;
+  demo_link: string | null;
+  github_link: string | null;
+  reflection_notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CodingFeature = {
+  id: string;
+  project_id: string;
+  title: string;
+  description: string | null;
+  status: CodingFeatureStatus;
+  xp_awarded: number;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** A coding project joined with its features, as shown on the Coding page. */
+export type CodingProjectRow = CodingProject & {
+  features: CodingFeature[];
+};
+
+export type Reward = {
+  id: string;
+  student_id: string;
+  title: string;
+  description: string | null;
+  required_xp: number | null;
+  unlocked: boolean;
+  unlocked_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type MissionStatus = "not_started" | "in_progress" | "completed";
 
 export type DailyMission = {

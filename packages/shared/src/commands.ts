@@ -27,6 +27,17 @@ export const COMMANDS = {
   mistakeDelete: "mistake.delete",
   reflectionCreate: "reflection.create",
   reflectionUpdate: "reflection.update",
+  codingProjectCreate: "coding.project.create",
+  codingProjectUpdate: "coding.project.update",
+  codingProjectDelete: "coding.project.delete",
+  codingFeatureCreate: "coding.feature.create",
+  codingFeatureUpdate: "coding.feature.update",
+  codingFeatureDelete: "coding.feature.delete",
+  codingFeatureSetStatus: "coding.feature.setStatus",
+  rewardCreate: "reward.create",
+  rewardUpdate: "reward.update",
+  rewardDelete: "reward.delete",
+  xpAdjust: "xp.adjust",
 } as const;
 
 export type CommandName = (typeof COMMANDS)[keyof typeof COMMANDS];

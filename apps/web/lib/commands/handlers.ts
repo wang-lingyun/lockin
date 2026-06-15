@@ -22,6 +22,17 @@ import type {
   MistakeDeleteInput,
   ReflectionCreateInput,
   ReflectionUpdateInput,
+  CodingProjectCreateInput,
+  CodingProjectUpdateInput,
+  CodingProjectDeleteInput,
+  CodingFeatureCreateInput,
+  CodingFeatureUpdateInput,
+  CodingFeatureDeleteInput,
+  CodingFeatureSetStatusInput,
+  RewardCreateInput,
+  RewardUpdateInput,
+  RewardDeleteInput,
+  XpAdjustInput,
 } from "@lockin/shared";
 import { homeworkSourceType } from "@lockin/shared";
 import type {
@@ -37,6 +48,9 @@ import type {
   HomeworkSubmission,
   MistakeBankEntry,
   Reflection,
+  CodingProject,
+  CodingFeature,
+  Reward,
 } from "@/lib/db/types";
 import type { CommandContext } from "./types";
 
@@ -604,4 +618,215 @@ export async function reflectionUpdate(
     .single();
   if (error) throw new Error(error.message);
   return data as Reflection;
+}
+
+/** Create a coding project (AC 19). RLS enforces ownership on insert. */
+export async function codingProjectCreate(
+  input: CodingProjectCreateInput,
+  ctx: CommandContext,
+): Promise<CodingProject> {
+  const { data, error } = await ctx.supabase
+    .from("coding_projects")
+    .insert({
+      student_id: input.studentId,
+      project_name: input.projectName,
+      goal: input.goal ?? null,
+      description: input.description ?? null,
+      demo_link: input.demoLink ?? null,
+      github_link: input.githubLink ?? null,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as CodingProject;
+}
+
+export async function codingProjectUpdate(
+  input: CodingProjectUpdateInput,
+  ctx: CommandContext,
+): Promise<CodingProject> {
+  const { id, ...rest } = input;
+  // Map camelCase input keys to snake_case columns, including explicit nulls.
+  const patch: Record<string, unknown> = {};
+  const map: Record<string, string> = {
+    projectName: "project_name",
+    goal: "goal",
+    description: "description",
+    demoLink: "demo_link",
+    githubLink: "github_link",
+    reflectionNotes: "reflection_notes",
+    status: "status",
+  };
+  for (const [k, v] of Object.entries(rest)) {
+    if (v !== undefined) patch[map[k]] = v;
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("coding_projects")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as CodingProject;
+}
+
+export async function codingProjectDelete(
+  input: CodingProjectDeleteInput,
+  ctx: CommandContext,
+): Promise<{ id: string }> {
+  const { error } = await ctx.supabase
+    .from("coding_projects")
+    .delete()
+    .eq("id", input.id);
+  if (error) throw new Error(error.message);
+  return { id: input.id };
+}
+
+/** Add a feature to a project. RLS (ownership via the project) gates the insert. */
+export async function codingFeatureCreate(
+  input: CodingFeatureCreateInput,
+  ctx: CommandContext,
+): Promise<CodingFeature> {
+  const { data, error } = await ctx.supabase
+    .from("coding_features")
+    .insert({
+      project_id: input.projectId,
+      title: input.title,
+      description: input.description ?? null,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as CodingFeature;
+}
+
+export async function codingFeatureUpdate(
+  input: CodingFeatureUpdateInput,
+  ctx: CommandContext,
+): Promise<CodingFeature> {
+  const { id, ...rest } = input;
+  const patch: Record<string, unknown> = {};
+  const map: Record<string, string> = {
+    title: "title",
+    description: "description",
+  };
+  for (const [k, v] of Object.entries(rest)) {
+    if (v !== undefined) patch[map[k]] = v;
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("coding_features")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as CodingFeature;
+}
+
+export async function codingFeatureDelete(
+  input: CodingFeatureDeleteInput,
+  ctx: CommandContext,
+): Promise<{ id: string }> {
+  const { error } = await ctx.supabase
+    .from("coding_features")
+    .delete()
+    .eq("id", input.id);
+  if (error) throw new Error(error.message);
+  return { id: input.id };
+}
+
+/**
+ * Set a coding feature's status via the `set_coding_feature_status` RPC, which
+ * awards 20 XP the first time it completes (idempotent) and returns the student.
+ */
+export async function codingFeatureSetStatus(
+  input: CodingFeatureSetStatusInput,
+  ctx: CommandContext,
+): Promise<Student> {
+  const { data, error } = await ctx.supabase
+    .rpc("set_coding_feature_status", {
+      p_feature_id: input.id,
+      p_status: input.status,
+    })
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Student;
+}
+
+/** Create a reward (PRD §10.12). RLS enforces ownership on insert. */
+export async function rewardCreate(
+  input: RewardCreateInput,
+  ctx: CommandContext,
+): Promise<Reward> {
+  const { data, error } = await ctx.supabase
+    .from("rewards")
+    .insert({
+      student_id: input.studentId,
+      title: input.title,
+      description: input.description ?? null,
+      required_xp: input.requiredXp ?? null,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Reward;
+}
+
+export async function rewardUpdate(
+  input: RewardUpdateInput,
+  ctx: CommandContext,
+): Promise<Reward> {
+  const { id, ...rest } = input;
+  const patch: Record<string, unknown> = {};
+  const map: Record<string, string> = {
+    title: "title",
+    description: "description",
+    requiredXp: "required_xp",
+  };
+  for (const [k, v] of Object.entries(rest)) {
+    if (v !== undefined) patch[map[k]] = v;
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("rewards")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Reward;
+}
+
+export async function rewardDelete(
+  input: RewardDeleteInput,
+  ctx: CommandContext,
+): Promise<{ id: string }> {
+  const { error } = await ctx.supabase
+    .from("rewards")
+    .delete()
+    .eq("id", input.id);
+  if (error) throw new Error(error.message);
+  return { id: input.id };
+}
+
+/**
+ * Manual parent XP adjustment via the `adjust_student_xp` RPC (writes the ledger
+ * with source_type 'manual', clamps current_xp at 0). The reason is captured in
+ * `admin_command_log` by `dispatch()`.
+ */
+export async function xpAdjust(
+  input: XpAdjustInput,
+  ctx: CommandContext,
+): Promise<Student> {
+  const { data, error } = await ctx.supabase
+    .rpc("adjust_student_xp", {
+      p_student_id: input.studentId,
+      p_delta: input.amount,
+      p_reason: input.reason ?? null,
+    })
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Student;
 }

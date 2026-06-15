@@ -361,3 +361,136 @@ export const ReflectionUpdateInput = z.object({
   parentComment: z.string().trim().max(4000).nullable().optional(),
 });
 export type ReflectionUpdateInput = z.infer<typeof ReflectionUpdateInput>;
+
+/**
+ * Coding Project Tracker (PRD §10.10, AC 19). A project's lifecycle is
+ * active → completed → archived; features under it are not_started →
+ * in_progress → completed.
+ */
+export const CODING_PROJECT_STATUSES = [
+  "active",
+  "completed",
+  "archived",
+] as const;
+export const CodingProjectStatus = z.enum(CODING_PROJECT_STATUSES);
+export type CodingProjectStatus = z.infer<typeof CodingProjectStatus>;
+
+export const CODING_FEATURE_STATUSES = [
+  "not_started",
+  "in_progress",
+  "completed",
+] as const;
+export const CodingFeatureStatus = z.enum(CODING_FEATURE_STATUSES);
+export type CodingFeatureStatus = z.infer<typeof CodingFeatureStatus>;
+
+/** XP awarded the first time a coding feature is completed (PRD §10.12). */
+export const CODING_FEATURE_XP = 20;
+
+/** Create a coding project for a student. */
+export const CodingProjectCreateInput = z.object({
+  studentId: uuid,
+  projectName: trimmed(160),
+  goal: z.string().trim().max(2000).optional(),
+  description: z.string().trim().max(2000).optional(),
+  demoLink: z.string().trim().max(500).optional(),
+  githubLink: z.string().trim().max(500).optional(),
+});
+export type CodingProjectCreateInput = z.infer<typeof CodingProjectCreateInput>;
+
+/** Partial update of a coding project (by id), including status changes. */
+export const CodingProjectUpdateInput = z.object({
+  id: uuid,
+  projectName: trimmed(160).optional(),
+  goal: z.string().trim().max(2000).nullable().optional(),
+  description: z.string().trim().max(2000).nullable().optional(),
+  demoLink: z.string().trim().max(500).nullable().optional(),
+  githubLink: z.string().trim().max(500).nullable().optional(),
+  reflectionNotes: z.string().trim().max(4000).nullable().optional(),
+  status: CodingProjectStatus.optional(),
+});
+export type CodingProjectUpdateInput = z.infer<typeof CodingProjectUpdateInput>;
+
+export const CodingProjectDeleteInput = z.object({ id: uuid });
+export type CodingProjectDeleteInput = z.infer<typeof CodingProjectDeleteInput>;
+
+/** Add a feature (checklist item) to a coding project. */
+export const CodingFeatureCreateInput = z.object({
+  projectId: uuid,
+  title: trimmed(200),
+  description: z.string().trim().max(2000).optional(),
+});
+export type CodingFeatureCreateInput = z.infer<typeof CodingFeatureCreateInput>;
+
+/** Partial update of a coding feature's text (by id). */
+export const CodingFeatureUpdateInput = z.object({
+  id: uuid,
+  title: trimmed(200).optional(),
+  description: z.string().trim().max(2000).nullable().optional(),
+});
+export type CodingFeatureUpdateInput = z.infer<typeof CodingFeatureUpdateInput>;
+
+export const CodingFeatureDeleteInput = z.object({ id: uuid });
+export type CodingFeatureDeleteInput = z.infer<typeof CodingFeatureDeleteInput>;
+
+/**
+ * Set a coding feature's status (RPC `set_coding_feature_status`). Completing a
+ * feature for the first time awards `CODING_FEATURE_XP` (idempotent server-side).
+ */
+export const CodingFeatureSetStatusInput = z.object({
+  id: uuid,
+  status: CodingFeatureStatus,
+});
+export type CodingFeatureSetStatusInput = z.infer<
+  typeof CodingFeatureSetStatusInput
+>;
+
+/**
+ * Rewards (PRD §10.12). A reward unlocks when the student's XP reaches
+ * `requiredXp`; that's derived on read via `rewardUnlocked` (no cron, ADR 0006).
+ */
+export const RewardCreateInput = z.object({
+  studentId: uuid,
+  title: trimmed(160),
+  description: z.string().trim().max(2000).optional(),
+  requiredXp: z.number().int().min(0).max(1000000).optional(),
+});
+export type RewardCreateInput = z.infer<typeof RewardCreateInput>;
+
+/** Partial update of a reward (by id). */
+export const RewardUpdateInput = z.object({
+  id: uuid,
+  title: trimmed(160).optional(),
+  description: z.string().trim().max(2000).nullable().optional(),
+  requiredXp: z.number().int().min(0).max(1000000).nullable().optional(),
+});
+export type RewardUpdateInput = z.infer<typeof RewardUpdateInput>;
+
+export const RewardDeleteInput = z.object({ id: uuid });
+export type RewardDeleteInput = z.infer<typeof RewardDeleteInput>;
+
+/**
+ * Whether a reward is unlocked at a given XP total (pure; read-time derivation,
+ * unit-tested). A reward with no threshold (`requiredXp` null) stays locked.
+ */
+export function rewardUnlocked(
+  requiredXp: number | null,
+  currentXp: number,
+): boolean {
+  return requiredXp != null && currentXp >= requiredXp;
+}
+
+/**
+ * Manual parent XP adjustment (RPC `adjust_student_xp`, source_type 'manual').
+ * A nonzero integer delta with an optional reason; XP is clamped at 0 server-side.
+ */
+export const XpAdjustInput = z.object({
+  studentId: uuid,
+  amount: z
+    .number()
+    .int()
+    .min(-100000)
+    .max(100000)
+    .refine((n) => n !== 0, { message: "amount must be nonzero" }),
+  reason: z.string().trim().max(200).optional(),
+});
+export type XpAdjustInput = z.infer<typeof XpAdjustInput>;

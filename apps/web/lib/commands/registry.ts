@@ -23,6 +23,17 @@ import {
   MistakeDeleteInput,
   ReflectionCreateInput,
   ReflectionUpdateInput,
+  CodingProjectCreateInput,
+  CodingProjectUpdateInput,
+  CodingProjectDeleteInput,
+  CodingFeatureCreateInput,
+  CodingFeatureUpdateInput,
+  CodingFeatureDeleteInput,
+  CodingFeatureSetStatusInput,
+  RewardCreateInput,
+  RewardUpdateInput,
+  RewardDeleteInput,
+  XpAdjustInput,
   type CommandName,
 } from "@lockin/shared";
 import type { CommandDefinition } from "./types";
@@ -50,6 +61,17 @@ import {
   mistakeDelete,
   reflectionCreate,
   reflectionUpdate,
+  codingProjectCreate,
+  codingProjectUpdate,
+  codingProjectDelete,
+  codingFeatureCreate,
+  codingFeatureUpdate,
+  codingFeatureDelete,
+  codingFeatureSetStatus,
+  rewardCreate,
+  rewardUpdate,
+  rewardDelete,
+  xpAdjust,
 } from "./handlers";
 
 type AnyHandler = CommandDefinition<unknown, unknown>["handler"];
@@ -151,5 +173,49 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
   [COMMANDS.reflectionUpdate]: {
     schema: ReflectionUpdateInput,
     handler: reflectionUpdate as AnyHandler,
+  },
+  [COMMANDS.codingProjectCreate]: {
+    schema: CodingProjectCreateInput,
+    handler: codingProjectCreate as AnyHandler,
+  },
+  [COMMANDS.codingProjectUpdate]: {
+    schema: CodingProjectUpdateInput,
+    handler: codingProjectUpdate as AnyHandler,
+  },
+  [COMMANDS.codingProjectDelete]: {
+    schema: CodingProjectDeleteInput,
+    handler: codingProjectDelete as AnyHandler,
+  },
+  [COMMANDS.codingFeatureCreate]: {
+    schema: CodingFeatureCreateInput,
+    handler: codingFeatureCreate as AnyHandler,
+  },
+  [COMMANDS.codingFeatureUpdate]: {
+    schema: CodingFeatureUpdateInput,
+    handler: codingFeatureUpdate as AnyHandler,
+  },
+  [COMMANDS.codingFeatureDelete]: {
+    schema: CodingFeatureDeleteInput,
+    handler: codingFeatureDelete as AnyHandler,
+  },
+  [COMMANDS.codingFeatureSetStatus]: {
+    schema: CodingFeatureSetStatusInput,
+    handler: codingFeatureSetStatus as AnyHandler,
+  },
+  [COMMANDS.rewardCreate]: {
+    schema: RewardCreateInput,
+    handler: rewardCreate as AnyHandler,
+  },
+  [COMMANDS.rewardUpdate]: {
+    schema: RewardUpdateInput,
+    handler: rewardUpdate as AnyHandler,
+  },
+  [COMMANDS.rewardDelete]: {
+    schema: RewardDeleteInput,
+    handler: rewardDelete as AnyHandler,
+  },
+  [COMMANDS.xpAdjust]: {
+    schema: XpAdjustInput,
+    handler: xpAdjust as AnyHandler,
   },
 };
