@@ -8,7 +8,9 @@ import { CreateStudentForm } from "./_components/CreateStudentForm";
 import { CreateTaskForm } from "./_components/CreateTaskForm";
 import { AssignTaskForm } from "./_components/AssignTaskForm";
 import { getTodaysMissions } from "@/lib/missions/getTodaysMissions";
-import type { Student } from "@/lib/db/types";
+import { weekStartFor } from "@/lib/missions/recurrence";
+import { goalProgressPercent } from "@/lib/goals/progress";
+import type { Student, WeeklyGoal } from "@/lib/db/types";
 
 export default async function Dashboard({
   searchParams,
@@ -34,6 +36,32 @@ export default async function Dashboard({
     ? await getTodaysMissions(supabase, active.id, today)
     : [];
 
+  // Weekly progress (AC 12): XP earned this week + this week's goals. Both are
+  // read-time aggregates (no cron). The week starts Monday (UTC).
+  const weekStart = weekStartFor(today);
+  let weeklyXp = 0;
+  let weeklyGoals: WeeklyGoal[] = [];
+  if (active) {
+    const { data: xpRows } = await supabase
+      .from("xp_events")
+      .select("amount")
+      .eq("student_id", active.id)
+      .gte("created_at", `${weekStart}T00:00:00.000Z`);
+    weeklyXp = (xpRows ?? []).reduce(
+      (sum, r) => sum + ((r as { amount: number }).amount ?? 0),
+      0,
+    );
+
+    const { data: goalRows } = await supabase
+      .from("weekly_goals")
+      .select("*")
+      .eq("student_id", active.id)
+      .eq("week_start_date", weekStart)
+      .neq("status", "archived")
+      .order("created_at", { ascending: true });
+    weeklyGoals = (goalRows ?? []) as WeeklyGoal[];
+  }
+
   const { data: subjects } = await supabase
     .from("subjects")
     .select("id,name")
@@ -52,6 +80,12 @@ export default async function Dashboard({
           <p className="text-sm text-muted">{parent.email}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/quests"
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
+          >
+            Quests
+          </Link>
           <Link
             href="/schedule"
             className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
@@ -115,8 +149,9 @@ export default async function Dashboard({
                     </span>
                   ) : null}
                 </h2>
-                <span className="text-sm text-muted">
-                  🔥 {active.current_streak} day streak
+                <span className="flex items-center gap-3 text-sm text-muted">
+                  <span>⚡ +{weeklyXp} XP this week</span>
+                  <span>🔥 {active.current_streak} day streak</span>
                 </span>
               </div>
 
@@ -194,6 +229,63 @@ export default async function Dashboard({
                             </button>
                           </form>
                         )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              <div className="mb-2 mt-6 flex items-center justify-between">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">
+                  This week&apos;s goals
+                </h3>
+                <Link href="/quests" className="text-xs text-muted hover:text-text">
+                  Quest Board →
+                </Link>
+              </div>
+              {weeklyGoals.length === 0 ? (
+                <p className="text-sm text-muted">
+                  No goals set this week.{" "}
+                  <Link href="/quests" className="text-accent hover:underline">
+                    Add one
+                  </Link>
+                  .
+                </p>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {weeklyGoals.map((g) => {
+                    const pct = goalProgressPercent(
+                      g.current_value,
+                      g.target_value,
+                    );
+                    return (
+                      <li key={g.id} className="rounded-lg bg-surface-2 px-4 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <span
+                            className={`truncate text-sm ${
+                              g.status === "completed"
+                                ? "text-muted line-through"
+                                : "text-text"
+                            }`}
+                          >
+                            {g.title}
+                          </span>
+                          <span className="shrink-0 text-xs text-muted">
+                            {g.target_value != null
+                              ? `${g.current_value}/${g.target_value}${
+                                  g.unit ? ` ${g.unit}` : ""
+                                }`
+                              : `${g.current_value}${g.unit ? ` ${g.unit}` : ""}`}
+                          </span>
+                        </div>
+                        {g.target_value != null ? (
+                          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-bg">
+                            <div
+                              className="h-full rounded-full bg-primary"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        ) : null}
                       </li>
                     );
                   })}

@@ -16,6 +16,10 @@ export const COMMANDS = {
   scheduleBlockUpdate: "schedule.block.update",
   scheduleBlockDelete: "schedule.block.delete",
   missionCompleteScheduled: "mission.completeScheduled",
+  weeklyGoalCreate: "weeklyGoal.create",
+  weeklyGoalUpdate: "weeklyGoal.update",
+  weeklyGoalDelete: "weeklyGoal.delete",
+  weeklyGoalIncrement: "weeklyGoal.incrementProgress",
 } as const;
 
 export type CommandName = (typeof COMMANDS)[keyof typeof COMMANDS];

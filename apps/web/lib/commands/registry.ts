@@ -12,6 +12,10 @@ import {
   ScheduleBlockUpdateInput,
   ScheduleBlockDeleteInput,
   CompleteScheduledInput,
+  WeeklyGoalCreateInput,
+  WeeklyGoalUpdateInput,
+  WeeklyGoalDeleteInput,
+  WeeklyGoalIncrementInput,
   type CommandName,
 } from "@lockin/shared";
 import type { CommandDefinition } from "./types";
@@ -28,6 +32,10 @@ import {
   scheduleBlockUpdate,
   scheduleBlockDelete,
   missionCompleteScheduled,
+  weeklyGoalCreate,
+  weeklyGoalUpdate,
+  weeklyGoalDelete,
+  weeklyGoalIncrement,
 } from "./handlers";
 
 type AnyHandler = CommandDefinition<unknown, unknown>["handler"];
@@ -85,5 +93,21 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
   [COMMANDS.missionCompleteScheduled]: {
     schema: CompleteScheduledInput,
     handler: missionCompleteScheduled as AnyHandler,
+  },
+  [COMMANDS.weeklyGoalCreate]: {
+    schema: WeeklyGoalCreateInput,
+    handler: weeklyGoalCreate as AnyHandler,
+  },
+  [COMMANDS.weeklyGoalUpdate]: {
+    schema: WeeklyGoalUpdateInput,
+    handler: weeklyGoalUpdate as AnyHandler,
+  },
+  [COMMANDS.weeklyGoalDelete]: {
+    schema: WeeklyGoalDeleteInput,
+    handler: weeklyGoalDelete as AnyHandler,
+  },
+  [COMMANDS.weeklyGoalIncrement]: {
+    schema: WeeklyGoalIncrementInput,
+    handler: weeklyGoalIncrement as AnyHandler,
   },
 };

@@ -84,6 +84,30 @@ export type ScheduleBlock = {
   status: ScheduleBlockStatus;
 };
 
+export type WeeklyGoalStatus = "active" | "completed" | "archived";
+
+export type WeeklyGoal = {
+  id: string;
+  student_id: string;
+  subject_id: string | null;
+  subject_track_id: string | null;
+  week_start_date: string;
+  title: string;
+  target_value: number | null;
+  current_value: number;
+  unit: string | null;
+  due_date: string | null;
+  status: WeeklyGoalStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+/** A weekly goal joined with its subject + track, as shown on the Quest Board. */
+export type WeeklyGoalRow = WeeklyGoal & {
+  subject: Pick<Subject, "id" | "name" | "color"> | null;
+  track: Pick<SubjectTrack, "id" | "name" | "color"> | null;
+};
+
 export type MissionStatus = "not_started" | "in_progress" | "completed";
 
 export type DailyMission = {

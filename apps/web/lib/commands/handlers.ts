@@ -11,6 +11,10 @@ import type {
   ScheduleBlockUpdateInput,
   ScheduleBlockDeleteInput,
   CompleteScheduledInput,
+  WeeklyGoalCreateInput,
+  WeeklyGoalUpdateInput,
+  WeeklyGoalDeleteInput,
+  WeeklyGoalIncrementInput,
 } from "@lockin/shared";
 import type {
   Student,
@@ -21,6 +25,7 @@ import type {
   StudentSubject,
   StudentSubjectTrack,
   ScheduleBlock,
+  WeeklyGoal,
 } from "@/lib/db/types";
 import type { CommandContext } from "./types";
 
@@ -308,4 +313,82 @@ export async function missionCompleteScheduled(
     .single();
   if (error) throw new Error(error.message);
   return data as Student;
+}
+
+export async function weeklyGoalCreate(
+  input: WeeklyGoalCreateInput,
+  ctx: CommandContext,
+): Promise<WeeklyGoal> {
+  const { data, error } = await ctx.supabase
+    .from("weekly_goals")
+    .insert({
+      student_id: input.studentId,
+      title: input.title,
+      week_start_date: input.weekStartDate,
+      subject_id: input.subjectId ?? null,
+      subject_track_id: input.subjectTrackId ?? null,
+      target_value: input.targetValue ?? null,
+      unit: input.unit ?? null,
+      due_date: input.dueDate ?? null,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as WeeklyGoal;
+}
+
+export async function weeklyGoalUpdate(
+  input: WeeklyGoalUpdateInput,
+  ctx: CommandContext,
+): Promise<WeeklyGoal> {
+  const { id, ...rest } = input;
+  // Map camelCase input keys to snake_case columns, including explicit nulls.
+  const patch: Record<string, unknown> = {};
+  const map: Record<string, string> = {
+    title: "title",
+    subjectId: "subject_id",
+    subjectTrackId: "subject_track_id",
+    weekStartDate: "week_start_date",
+    targetValue: "target_value",
+    currentValue: "current_value",
+    unit: "unit",
+    dueDate: "due_date",
+    status: "status",
+  };
+  for (const [k, v] of Object.entries(rest)) {
+    if (v !== undefined) patch[map[k]] = v;
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("weekly_goals")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as WeeklyGoal;
+}
+
+export async function weeklyGoalDelete(
+  input: WeeklyGoalDeleteInput,
+  ctx: CommandContext,
+): Promise<{ id: string }> {
+  const { error } = await ctx.supabase
+    .from("weekly_goals")
+    .delete()
+    .eq("id", input.id);
+  if (error) throw new Error(error.message);
+  return { id: input.id };
+}
+
+/** Atomic progress bump via the `increment_weekly_goal` RPC (auto-completes). */
+export async function weeklyGoalIncrement(
+  input: WeeklyGoalIncrementInput,
+  ctx: CommandContext,
+): Promise<WeeklyGoal> {
+  const { data, error } = await ctx.supabase
+    .rpc("increment_weekly_goal", { p_goal_id: input.id, p_delta: input.delta })
+    .single();
+  if (error) throw new Error(error.message);
+  return data as WeeklyGoal;
 }

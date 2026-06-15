@@ -9,6 +9,9 @@ import {
   SetTrackPriorityInput,
   ScheduleBlockCreateInput,
   CompleteScheduledInput,
+  WeeklyGoalCreateInput,
+  WeeklyGoalUpdateInput,
+  WeeklyGoalIncrementInput,
 } from "@lockin/shared";
 
 const UUID = "11111111-1111-1111-1111-111111111111";
@@ -179,5 +182,77 @@ describe("CompleteScheduledInput", () => {
         date: "06/14/2026",
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("WeeklyGoalCreateInput", () => {
+  it("requires uuid studentId, title, and an ISO weekStartDate", () => {
+    expect(
+      WeeklyGoalCreateInput.safeParse({
+        studentId: UUID,
+        title: "Solve 50 problems",
+        weekStartDate: "2026-06-01",
+      }).success,
+    ).toBe(true);
+    expect(
+      WeeklyGoalCreateInput.safeParse({
+        studentId: "x",
+        title: "Solve 50 problems",
+        weekStartDate: "2026-06-01",
+      }).success,
+    ).toBe(false);
+    expect(
+      WeeklyGoalCreateInput.safeParse({
+        studentId: UUID,
+        title: "  ",
+        weekStartDate: "2026-06-01",
+      }).success,
+    ).toBe(false);
+    expect(
+      WeeklyGoalCreateInput.safeParse({
+        studentId: UUID,
+        title: "x",
+        weekStartDate: "06/01/2026",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a negative targetValue", () => {
+    expect(
+      WeeklyGoalCreateInput.safeParse({
+        studentId: UUID,
+        title: "x",
+        weekStartDate: "2026-06-01",
+        targetValue: -1,
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("WeeklyGoalIncrementInput", () => {
+  it("requires a uuid id and a numeric delta", () => {
+    expect(
+      WeeklyGoalIncrementInput.safeParse({ id: UUID, delta: 5 }).success,
+    ).toBe(true);
+    expect(
+      WeeklyGoalIncrementInput.safeParse({ id: UUID, delta: -3 }).success,
+    ).toBe(true);
+    expect(
+      WeeklyGoalIncrementInput.safeParse({ id: "x", delta: 5 }).success,
+    ).toBe(false);
+    expect(
+      WeeklyGoalIncrementInput.safeParse({ id: UUID, delta: "5" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("WeeklyGoalUpdateInput", () => {
+  it("rejects an unknown status", () => {
+    expect(
+      WeeklyGoalUpdateInput.safeParse({ id: UUID, status: "done" }).success,
+    ).toBe(false);
+    expect(
+      WeeklyGoalUpdateInput.safeParse({ id: UUID, status: "completed" }).success,
+    ).toBe(true);
   });
 });

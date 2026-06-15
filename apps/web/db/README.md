@@ -10,6 +10,7 @@ and storage changes require human review (see ADR 0002, PRD §11).
 | `migrations/0001_init.sql` | Stage 1: profiles + `handle_new_user` trigger, students + ownership, learning profiles, subjects (+ seed defaults), tasks, assignments, daily missions, XP events, audit log. RLS on every table. RPCs `owns_student`, `create_student`, `complete_mission`. |
 | `migrations/0002_subjects_tracks.sql` | Stage 2: `subject_tracks`, `student_subjects`, `student_subject_tracks` (RLS); `subject_track_id` added to `tasks` and `daily_missions`; seeds Math tracks HMA/AoPS/Geometry/Calculus. |
 | `migrations/0003_schedule_blocks.sql` | Stage 3: `schedule_blocks` (per-student dated calendar with `recurrence_rule` iCal RRULE, RLS, `updated_at` trigger); adds the deferred `daily_missions.schedule_block_id` → `schedule_blocks(id)` FK. Missions are derived from blocks **on read** (no cron); a block is materialized into a `daily_mission` only when marked done. |
+| `migrations/0004_weekly_goals.sql` | Stage 4: `weekly_goals` (per-student, per-week outcome goals with target/current/unit/status, optional subject/track attribution, RLS, `updated_at` trigger). RPC `increment_weekly_goal` atomically bumps progress (clamped ≥0) and auto-completes when the target is reached. Progress is manual in the MVP; goals are separate from XP. |
 
 ## Applying a migration
 

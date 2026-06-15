@@ -139,3 +139,49 @@ export const CompleteScheduledInput = z.object({
   date: isoDate,
 });
 export type CompleteScheduledInput = z.infer<typeof CompleteScheduledInput>;
+
+/** A weekly goal's lifecycle (Quest Board, PRD §10.6). */
+export const WeeklyGoalStatus = z.enum(["active", "completed", "archived"]);
+export type WeeklyGoalStatus = z.infer<typeof WeeklyGoalStatus>;
+
+/**
+ * Create an outcome-based weekly goal for a student (Quest Board). Scoped to a
+ * calendar week (`weekStartDate`, ISO YYYY-MM-DD); progress is tracked manually
+ * in the MVP. `subjectId` / `subjectTrackId` are optional track attribution.
+ */
+export const WeeklyGoalCreateInput = z.object({
+  studentId: uuid,
+  title: trimmed(160),
+  weekStartDate: isoDate,
+  subjectId: uuid.optional(),
+  subjectTrackId: uuid.optional(),
+  targetValue: z.number().nonnegative().max(100000).optional(),
+  unit: z.string().trim().max(40).optional(),
+  dueDate: isoDate.optional(),
+});
+export type WeeklyGoalCreateInput = z.infer<typeof WeeklyGoalCreateInput>;
+
+/** Partial update of a weekly goal (by id). */
+export const WeeklyGoalUpdateInput = z.object({
+  id: uuid,
+  title: trimmed(160).optional(),
+  subjectId: uuid.nullable().optional(),
+  subjectTrackId: uuid.nullable().optional(),
+  weekStartDate: isoDate.optional(),
+  targetValue: z.number().nonnegative().max(100000).nullable().optional(),
+  currentValue: z.number().nonnegative().max(100000).optional(),
+  unit: z.string().trim().max(40).nullable().optional(),
+  dueDate: isoDate.nullable().optional(),
+  status: WeeklyGoalStatus.optional(),
+});
+export type WeeklyGoalUpdateInput = z.infer<typeof WeeklyGoalUpdateInput>;
+
+export const WeeklyGoalDeleteInput = z.object({ id: uuid });
+export type WeeklyGoalDeleteInput = z.infer<typeof WeeklyGoalDeleteInput>;
+
+/** Atomically bump a goal's progress (RPC `increment_weekly_goal`). */
+export const WeeklyGoalIncrementInput = z.object({
+  id: uuid,
+  delta: z.number().min(-100000).max(100000),
+});
+export type WeeklyGoalIncrementInput = z.infer<typeof WeeklyGoalIncrementInput>;
