@@ -8,6 +8,10 @@ export const COMMANDS = {
   taskCreate: "task.create",
   taskAssign: "task.assign",
   missionComplete: "mission.complete",
+  subjectCreate: "subject.create",
+  trackCreate: "track.create",
+  studentSetSubjectPriority: "student.setSubjectPriority",
+  studentSetTrackPriority: "student.setTrackPriority",
 } as const;
 
 export type CommandName = (typeof COMMANDS)[keyof typeof COMMANDS];

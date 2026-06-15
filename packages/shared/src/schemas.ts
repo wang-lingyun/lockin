@@ -44,3 +44,47 @@ export const MissionCompleteInput = z.object({
   missionId: uuid,
 });
 export type MissionCompleteInput = z.infer<typeof MissionCompleteInput>;
+
+/**
+ * A student's relationship to a subject/track (ADR 0005). `primary` = core,
+ * `bonus` = optional/enrichment, `inactive` = explicitly off. Absence of a row
+ * also means inactive.
+ */
+export const PriorityType = z.enum(["primary", "bonus", "inactive"]);
+export type PriorityType = z.infer<typeof PriorityType>;
+
+/** Create a custom subject owned by the current parent. */
+export const SubjectCreateInput = z.object({
+  name: trimmed(60),
+  description: z.string().trim().max(500).optional(),
+  icon: z.string().trim().max(40).optional(),
+  color: z.string().trim().max(20).optional(),
+});
+export type SubjectCreateInput = z.infer<typeof SubjectCreateInput>;
+
+/** Create a track (sub-subject) under a subject. */
+export const TrackCreateInput = z.object({
+  subjectId: uuid,
+  name: trimmed(60),
+  description: z.string().trim().max(500).optional(),
+  icon: z.string().trim().max(40).optional(),
+  color: z.string().trim().max(20).optional(),
+  sortOrder: z.number().int().min(0).max(1000).optional(),
+});
+export type TrackCreateInput = z.infer<typeof TrackCreateInput>;
+
+/** Set a student's priority for a subject (upsert). */
+export const SetSubjectPriorityInput = z.object({
+  studentId: uuid,
+  subjectId: uuid,
+  priority: PriorityType,
+});
+export type SetSubjectPriorityInput = z.infer<typeof SetSubjectPriorityInput>;
+
+/** Set a student's priority for a track (upsert). */
+export const SetTrackPriorityInput = z.object({
+  studentId: uuid,
+  subjectTrackId: uuid,
+  priority: PriorityType,
+});
+export type SetTrackPriorityInput = z.infer<typeof SetTrackPriorityInput>;

@@ -25,11 +25,41 @@ export type Subject = {
   owner_parent_id: string | null;
 };
 
+export type PriorityType = "primary" | "bonus" | "inactive";
+
+export type SubjectTrack = {
+  id: string;
+  subject_id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
+  sort_order: number;
+  is_default: boolean;
+  is_active: boolean;
+  owner_parent_id: string | null;
+};
+
+export type StudentSubject = {
+  id: string;
+  student_id: string;
+  subject_id: string;
+  priority_type: PriorityType;
+};
+
+export type StudentSubjectTrack = {
+  id: string;
+  student_id: string;
+  subject_track_id: string;
+  priority_type: PriorityType;
+};
+
 export type Task = {
   id: string;
   title: string;
   description: string | null;
   subject_id: string | null;
+  subject_track_id: string | null;
   xp_value: number;
   estimated_minutes: number | null;
   created_by: string | null;
@@ -43,6 +73,7 @@ export type DailyMission = {
   student_id: string;
   task_id: string | null;
   subject_id: string | null;
+  subject_track_id: string | null;
   schedule_block_id: string | null;
   date: string;
   status: MissionStatus;

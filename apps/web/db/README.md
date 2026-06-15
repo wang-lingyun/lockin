@@ -8,6 +8,7 @@ and storage changes require human review (see ADR 0002, PRD §11).
 | File | What it does |
 |------|--------------|
 | `migrations/0001_init.sql` | Stage 1: profiles + `handle_new_user` trigger, students + ownership, learning profiles, subjects (+ seed defaults), tasks, assignments, daily missions, XP events, audit log. RLS on every table. RPCs `owns_student`, `create_student`, `complete_mission`. |
+| `migrations/0002_subjects_tracks.sql` | Stage 2: `subject_tracks`, `student_subjects`, `student_subject_tracks` (RLS); `subject_track_id` added to `tasks` and `daily_missions`; seeds Math tracks HMA/AoPS/Geometry/Calculus. |
 
 ## Applying a migration
 

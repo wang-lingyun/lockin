@@ -58,11 +58,19 @@ export default async function Dashboard({
           <h1 className="text-2xl font-bold text-text">LockIn</h1>
           <p className="text-sm text-muted">{parent.email}</p>
         </div>
-        <form action={signOut}>
-          <button className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text">
-            Sign out
-          </button>
-        </form>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/settings"
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
+          >
+            Settings
+          </Link>
+          <form action={signOut}>
+            <button className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text">
+              Sign out
+            </button>
+          </form>
+        </div>
       </header>
 
       {students.length === 0 ? (

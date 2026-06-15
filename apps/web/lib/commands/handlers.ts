@@ -3,8 +3,20 @@ import type {
   TaskCreateInput,
   TaskAssignInput,
   MissionCompleteInput,
+  SubjectCreateInput,
+  TrackCreateInput,
+  SetSubjectPriorityInput,
+  SetTrackPriorityInput,
 } from "@lockin/shared";
-import type { Student, Task, DailyMission } from "@/lib/db/types";
+import type {
+  Student,
+  Task,
+  DailyMission,
+  Subject,
+  SubjectTrack,
+  StudentSubject,
+  StudentSubjectTrack,
+} from "@/lib/db/types";
 import type { CommandContext } from "./types";
 
 /**
@@ -89,4 +101,86 @@ export async function missionComplete(
     .single();
   if (error) throw new Error(error.message);
   return data as Student;
+}
+
+export async function subjectCreate(
+  input: SubjectCreateInput,
+  ctx: CommandContext,
+): Promise<Subject> {
+  const { data, error } = await ctx.supabase
+    .from("subjects")
+    .insert({
+      name: input.name,
+      description: input.description ?? null,
+      icon: input.icon ?? null,
+      color: input.color ?? null,
+      is_default: false,
+      owner_parent_id: ctx.parentUserId,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Subject;
+}
+
+export async function trackCreate(
+  input: TrackCreateInput,
+  ctx: CommandContext,
+): Promise<SubjectTrack> {
+  const { data, error } = await ctx.supabase
+    .from("subject_tracks")
+    .insert({
+      subject_id: input.subjectId,
+      name: input.name,
+      description: input.description ?? null,
+      icon: input.icon ?? null,
+      color: input.color ?? null,
+      sort_order: input.sortOrder ?? 0,
+      is_default: false,
+      owner_parent_id: ctx.parentUserId,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as SubjectTrack;
+}
+
+export async function studentSetSubjectPriority(
+  input: SetSubjectPriorityInput,
+  ctx: CommandContext,
+): Promise<StudentSubject> {
+  const { data, error } = await ctx.supabase
+    .from("student_subjects")
+    .upsert(
+      {
+        student_id: input.studentId,
+        subject_id: input.subjectId,
+        priority_type: input.priority,
+      },
+      { onConflict: "student_id,subject_id" },
+    )
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as StudentSubject;
+}
+
+export async function studentSetTrackPriority(
+  input: SetTrackPriorityInput,
+  ctx: CommandContext,
+): Promise<StudentSubjectTrack> {
+  const { data, error } = await ctx.supabase
+    .from("student_subject_tracks")
+    .upsert(
+      {
+        student_id: input.studentId,
+        subject_track_id: input.subjectTrackId,
+        priority_type: input.priority,
+      },
+      { onConflict: "student_id,subject_track_id" },
+    )
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as StudentSubjectTrack;
 }
