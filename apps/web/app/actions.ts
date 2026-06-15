@@ -81,3 +81,22 @@ export async function completeMissionAction(formData: FormData): Promise<void> {
   );
   revalidatePath("/");
 }
+
+/**
+ * Complete a *virtual* mission derived from a schedule block: the handler
+ * materializes the dated mission (idempotent) then awards XP. Used by the
+ * dashboard for items that have a `scheduleBlockId` but no persisted mission.
+ */
+export async function completeScheduledAction(formData: FormData): Promise<void> {
+  const parent = await requireParent();
+  await dispatch(
+    COMMANDS.missionCompleteScheduled,
+    {
+      studentId: String(formData.get("studentId") ?? ""),
+      scheduleBlockId: String(formData.get("scheduleBlockId") ?? ""),
+      date: String(formData.get("date") ?? "") || todayISO(),
+    },
+    uiCommandContext(parent),
+  );
+  revalidatePath("/");
+}

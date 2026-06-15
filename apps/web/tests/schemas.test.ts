@@ -7,6 +7,8 @@ import {
   TrackCreateInput,
   SetSubjectPriorityInput,
   SetTrackPriorityInput,
+  ScheduleBlockCreateInput,
+  CompleteScheduledInput,
 } from "@lockin/shared";
 
 const UUID = "11111111-1111-1111-1111-111111111111";
@@ -118,6 +120,63 @@ describe("priority inputs", () => {
         studentId: UUID,
         subjectTrackId: "x",
         priority: "primary",
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("ScheduleBlockCreateInput", () => {
+  it("requires a uuid studentId and a title", () => {
+    expect(
+      ScheduleBlockCreateInput.safeParse({ studentId: UUID, title: "Math" })
+        .success,
+    ).toBe(true);
+    expect(
+      ScheduleBlockCreateInput.safeParse({ studentId: "x", title: "Math" })
+        .success,
+    ).toBe(false);
+    expect(
+      ScheduleBlockCreateInput.safeParse({ studentId: UUID, title: "  " })
+        .success,
+    ).toBe(false);
+  });
+
+  it("accepts ISO datetimes with offset and an RRULE string", () => {
+    const r = ScheduleBlockCreateInput.parse({
+      studentId: UUID,
+      title: "Class",
+      startAt: "2026-06-01T16:00:00.000Z",
+      endAt: "2026-06-01T17:00:00.000Z",
+      recurrenceRule: "FREQ=WEEKLY;BYDAY=MO,WE,FR",
+    });
+    expect(r.recurrenceRule).toContain("FREQ=WEEKLY");
+  });
+
+  it("rejects a non-datetime startAt", () => {
+    expect(
+      ScheduleBlockCreateInput.safeParse({
+        studentId: UUID,
+        title: "Class",
+        startAt: "2026-06-01",
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("CompleteScheduledInput", () => {
+  it("validates ids and the date format", () => {
+    expect(
+      CompleteScheduledInput.safeParse({
+        studentId: UUID,
+        scheduleBlockId: UUID,
+        date: "2026-06-14",
+      }).success,
+    ).toBe(true);
+    expect(
+      CompleteScheduledInput.safeParse({
+        studentId: UUID,
+        scheduleBlockId: UUID,
+        date: "06/14/2026",
       }).success,
     ).toBe(false);
   });

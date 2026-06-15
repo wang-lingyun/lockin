@@ -12,6 +12,10 @@ export const COMMANDS = {
   trackCreate: "track.create",
   studentSetSubjectPriority: "student.setSubjectPriority",
   studentSetTrackPriority: "student.setTrackPriority",
+  scheduleBlockCreate: "schedule.block.create",
+  scheduleBlockUpdate: "schedule.block.update",
+  scheduleBlockDelete: "schedule.block.delete",
+  missionCompleteScheduled: "mission.completeScheduled",
 } as const;
 
 export type CommandName = (typeof COMMANDS)[keyof typeof COMMANDS];

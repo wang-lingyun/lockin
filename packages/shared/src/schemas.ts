@@ -9,6 +9,7 @@ import { z } from "zod";
 
 const uuid = z.string().uuid();
 const trimmed = (max: number) => z.string().trim().min(1).max(max);
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "expected YYYY-MM-DD");
 
 /** Create a student under the current parent (RPC `create_student`). */
 export const StudentCreateInput = z.object({
@@ -88,3 +89,53 @@ export const SetTrackPriorityInput = z.object({
   priority: PriorityType,
 });
 export type SetTrackPriorityInput = z.infer<typeof SetTrackPriorityInput>;
+
+/**
+ * A planned study session on a student's calendar (ADR 0006). `startAt`/`endAt`
+ * are ISO datetimes; `recurrenceRule` is an iCal RRULE expanded on read.
+ */
+export const ScheduleBlockCreateInput = z.object({
+  studentId: uuid,
+  title: trimmed(160),
+  subjectId: uuid.optional(),
+  subjectTrackId: uuid.optional(),
+  taskId: uuid.optional(),
+  startAt: z.string().datetime({ offset: true }).optional(),
+  endAt: z.string().datetime({ offset: true }).optional(),
+  allDay: z.boolean().optional(),
+  recurrenceRule: z.string().trim().max(500).optional(),
+  location: z.string().trim().max(160).optional(),
+  notes: z.string().trim().max(2000).optional(),
+});
+export type ScheduleBlockCreateInput = z.infer<typeof ScheduleBlockCreateInput>;
+
+/** Partial update of a schedule block (by id). */
+export const ScheduleBlockUpdateInput = z.object({
+  id: uuid,
+  title: trimmed(160).optional(),
+  subjectId: uuid.nullable().optional(),
+  subjectTrackId: uuid.nullable().optional(),
+  taskId: uuid.nullable().optional(),
+  startAt: z.string().datetime({ offset: true }).nullable().optional(),
+  endAt: z.string().datetime({ offset: true }).nullable().optional(),
+  allDay: z.boolean().optional(),
+  recurrenceRule: z.string().trim().max(500).nullable().optional(),
+  location: z.string().trim().max(160).nullable().optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
+  status: z.enum(["planned", "cancelled"]).optional(),
+});
+export type ScheduleBlockUpdateInput = z.infer<typeof ScheduleBlockUpdateInput>;
+
+export const ScheduleBlockDeleteInput = z.object({ id: uuid });
+export type ScheduleBlockDeleteInput = z.infer<typeof ScheduleBlockDeleteInput>;
+
+/**
+ * Complete a scheduled block for a date — materializes its mission (idempotent)
+ * then completes it. `date` is an ISO calendar date (YYYY-MM-DD).
+ */
+export const CompleteScheduledInput = z.object({
+  studentId: uuid,
+  scheduleBlockId: uuid,
+  date: isoDate,
+});
+export type CompleteScheduledInput = z.infer<typeof CompleteScheduledInput>;

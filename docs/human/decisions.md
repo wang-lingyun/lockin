@@ -17,6 +17,7 @@ Significant architecture decisions also get a numbered ADR under `../adr/`.
 | 2026-06-14 | **AI-native admin**: one typed Admin Command API + agent gateway (MCP/webhook) in MVP; Slack + voice connectors deferred to external modules. | Manage LockIn conversationally via agents; stay Vercel-Hobby friendly. ADR 0007. |
 | 2026-06-14 | **Stage 1 vertical slice** built: `0001_init.sql` (schema + RLS + RPCs), shared zod command schemas, the command layer (`dispatch`→registry→handlers + `admin_command_log`), parent auth (login/signup/signout + middleware), parent dashboard (student switcher, today's missions, XP bar, admin forms). | First end-to-end path login→child→assign→complete→XP. UI and the future agent gateway share one validated command surface. |
 | 2026-06-14 | **Stage 2 subjects & tracks** built (ADR 0005): `0002_subjects_tracks.sql` (`subject_tracks`, `student_subjects`, `student_subject_tracks` + RLS; Math tracks seeded; `subject_track_id` on tasks/missions), 4 new commands (`subject.create`, `track.create`, `student.setSubjectPriority/setTrackPriority`), `/settings` page for per-student three-way priority. | Per-student configurable subjects (AC 4/5/6); Math exposes HMA/AoPS/Geometry/Calculus (AC 33). Decided: UI = activate+prioritize only (create commands built, no custom-creation form yet); priority = primary/bonus/inactive, absence = inactive. |
+| 2026-06-14 | **Stage 3 calendar & on-read missions** built (ADR 0006): `0003_schedule_blocks.sql` (`schedule_blocks` + RLS + the deferred `daily_missions.schedule_block_id` FK), full iCal **RRULE** recurrence via `rrule.js` (server-side `lib/missions/recurrence.ts`), `getTodaysMissions` merging persisted + virtual entries, 4 new commands (`schedule.block.create/update/delete`, `mission.completeScheduled`), `/schedule` week-agenda UI, dashboard now derived from the calendar. | Per-track dated schedule with times (AC 35) and Today's Missions derived on read with no cron (AC 36), within Vercel Hobby limits. Decided: a block materializes into a `daily_mission` only when marked done (idempotent via `(student,date,block)` unique key), so re-opening a day never duplicates; the add-block form exposes none/daily/weekly presets but stores real RRULE strings (agent can set arbitrary rules via the `update` command). |
 
 ## Open decisions / to revisit
 
@@ -42,3 +43,11 @@ Significant architecture decisions also get a numbered ADR under `../adr/`.
 - **Stage 1 ad-hoc missions:** `daily_missions.schedule_block_id` is null in Stage 1, so
   the `unique(student_id, date, schedule_block_id)` constraint permits multiple ad-hoc
   missions per day (NULLs are distinct). Schedule-block FK + dedup arrive in Stage 3.
+- **Calendar timezone (Stage 3):** all schedule date/time math is **UTC** for now
+  (consistent with `lib/date.ts` `todayISO()` and `lib/missions/recurrence.ts`). Per-student
+  timezones are deferred — a student in a non-UTC zone may see a block's day/time shifted.
+  Revisit before multi-timezone use; the schema stores `timestamptz`, so no migration is
+  needed, only read-time conversion.
+- **Streak recalculation (Stage 3):** still not implemented — `current_streak` stays a
+  displayed default. Now that the calendar exists it can be recomputed on read from
+  completed missions; tracked for a later stage.

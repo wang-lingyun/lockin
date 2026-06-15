@@ -66,6 +66,24 @@ export type Task = {
   created_at: string;
 };
 
+export type ScheduleBlockStatus = "planned" | "cancelled";
+
+export type ScheduleBlock = {
+  id: string;
+  student_id: string;
+  subject_id: string | null;
+  subject_track_id: string | null;
+  task_id: string | null;
+  title: string;
+  start_at: string | null;
+  end_at: string | null;
+  all_day: boolean;
+  recurrence_rule: string | null;
+  location: string | null;
+  notes: string | null;
+  status: ScheduleBlockStatus;
+};
+
 export type MissionStatus = "not_started" | "in_progress" | "completed";
 
 export type DailyMission = {

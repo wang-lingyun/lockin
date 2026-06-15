@@ -8,6 +8,10 @@ import {
   TrackCreateInput,
   SetSubjectPriorityInput,
   SetTrackPriorityInput,
+  ScheduleBlockCreateInput,
+  ScheduleBlockUpdateInput,
+  ScheduleBlockDeleteInput,
+  CompleteScheduledInput,
   type CommandName,
 } from "@lockin/shared";
 import type { CommandDefinition } from "./types";
@@ -20,6 +24,10 @@ import {
   trackCreate,
   studentSetSubjectPriority,
   studentSetTrackPriority,
+  scheduleBlockCreate,
+  scheduleBlockUpdate,
+  scheduleBlockDelete,
+  missionCompleteScheduled,
 } from "./handlers";
 
 type AnyHandler = CommandDefinition<unknown, unknown>["handler"];
@@ -61,5 +69,21 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
   [COMMANDS.studentSetTrackPriority]: {
     schema: SetTrackPriorityInput,
     handler: studentSetTrackPriority as AnyHandler,
+  },
+  [COMMANDS.scheduleBlockCreate]: {
+    schema: ScheduleBlockCreateInput,
+    handler: scheduleBlockCreate as AnyHandler,
+  },
+  [COMMANDS.scheduleBlockUpdate]: {
+    schema: ScheduleBlockUpdateInput,
+    handler: scheduleBlockUpdate as AnyHandler,
+  },
+  [COMMANDS.scheduleBlockDelete]: {
+    schema: ScheduleBlockDeleteInput,
+    handler: scheduleBlockDelete as AnyHandler,
+  },
+  [COMMANDS.missionCompleteScheduled]: {
+    schema: CompleteScheduledInput,
+    handler: missionCompleteScheduled as AnyHandler,
   },
 };

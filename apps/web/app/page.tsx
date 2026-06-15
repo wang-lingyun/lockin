@@ -2,12 +2,13 @@ import Link from "next/link";
 import { requireParent } from "@/lib/auth/session";
 import { todayISO } from "@/lib/date";
 import { signOut } from "./login/actions";
-import { completeMissionAction } from "./actions";
+import { completeMissionAction, completeScheduledAction } from "./actions";
 import { XpBar } from "./_components/XpBar";
 import { CreateStudentForm } from "./_components/CreateStudentForm";
 import { CreateTaskForm } from "./_components/CreateTaskForm";
 import { AssignTaskForm } from "./_components/AssignTaskForm";
-import type { Student, MissionWithTask } from "@/lib/db/types";
+import { getTodaysMissions } from "@/lib/missions/getTodaysMissions";
+import type { Student } from "@/lib/db/types";
 
 export default async function Dashboard({
   searchParams,
@@ -28,18 +29,10 @@ export default async function Dashboard({
   const active =
     students.find((s) => s.id === sp.student) ?? students[0] ?? null;
 
-  let missions: MissionWithTask[] = [];
-  if (active) {
-    const { data } = await supabase
-      .from("daily_missions")
-      .select(
-        "*, task:tasks(id,title,xp_value), subject:subjects(id,name,color)",
-      )
-      .eq("student_id", active.id)
-      .eq("date", today)
-      .order("created_at", { ascending: true });
-    missions = (data ?? []) as MissionWithTask[];
-  }
+  // Today's missions: persisted + virtual (derived from schedule blocks on read).
+  const missions = active
+    ? await getTodaysMissions(supabase, active.id, today)
+    : [];
 
   const { data: subjects } = await supabase
     .from("subjects")
@@ -59,6 +52,12 @@ export default async function Dashboard({
           <p className="text-sm text-muted">{parent.email}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/schedule"
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
+          >
+            Schedule
+          </Link>
           <Link
             href="/settings"
             className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
@@ -136,33 +135,60 @@ export default async function Dashboard({
                     const done = m.status === "completed";
                     return (
                       <li
-                        key={m.id}
+                        key={m.key}
                         className="flex items-center justify-between rounded-lg bg-surface-2 px-4 py-3"
                       >
-                        <div className="min-w-0">
-                          <p
-                            className={`truncate text-sm ${
-                              done ? "text-muted line-through" : "text-text"
-                            }`}
-                          >
-                            {m.task?.title ?? "Untitled task"}
-                          </p>
-                          <p className="text-xs text-muted">
-                            {m.subject?.name ?? "No subject"} · +
-                            {m.task?.xp_value ?? 0} XP
-                          </p>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span
+                            className="inline-block h-8 w-1 shrink-0 rounded-full"
+                            style={{ background: m.subjectColor ?? "#6366f1" }}
+                          />
+                          <div className="min-w-0">
+                            <p
+                              className={`truncate text-sm ${
+                                done ? "text-muted line-through" : "text-text"
+                              }`}
+                            >
+                              {m.title}
+                              {m.source === "block" ? (
+                                <span className="ml-2 text-xs text-muted">
+                                  scheduled
+                                </span>
+                              ) : null}
+                            </p>
+                            <p className="text-xs text-muted">
+                              {m.subjectName ?? "No subject"} · +{m.xp} XP
+                            </p>
+                          </div>
                         </div>
                         {done ? (
                           <span className="shrink-0 text-sm text-success">
                             ✓ Done
                           </span>
-                        ) : (
+                        ) : m.source === "mission" ? (
                           <form action={completeMissionAction}>
                             <input
                               type="hidden"
                               name="missionId"
-                              value={m.id}
+                              value={m.missionId}
                             />
+                            <button className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg hover:opacity-90">
+                              Mark done
+                            </button>
+                          </form>
+                        ) : (
+                          <form action={completeScheduledAction}>
+                            <input
+                              type="hidden"
+                              name="studentId"
+                              value={active.id}
+                            />
+                            <input
+                              type="hidden"
+                              name="scheduleBlockId"
+                              value={m.scheduleBlockId}
+                            />
+                            <input type="hidden" name="date" value={today} />
                             <button className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg hover:opacity-90">
                               Mark done
                             </button>
