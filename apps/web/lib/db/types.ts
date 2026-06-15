@@ -108,6 +108,61 @@ export type WeeklyGoalRow = WeeklyGoal & {
   track: Pick<SubjectTrack, "id" | "name" | "color"> | null;
 };
 
+export type HomeworkReviewStatus =
+  | "submitted"
+  | "reviewed"
+  | "needs_correction"
+  | "mastered";
+
+export type HomeworkSourceType = "text" | "photo" | "pdf" | "code" | "link";
+
+export type AiAnalysisStatus =
+  | "not_started"
+  | "queued"
+  | "completed"
+  | "failed";
+
+export type HomeworkSubmission = {
+  id: string;
+  student_id: string;
+  subject_id: string | null;
+  subject_track_id: string | null;
+  topic: string | null;
+  assignment_title: string | null;
+  submission_date: string;
+  raw_text: string | null;
+  source_type: HomeworkSourceType;
+  student_notes: string | null;
+  parent_notes: string | null;
+  review_status: HomeworkReviewStatus;
+  // AI-ready fields — present but unpopulated in the MVP.
+  ai_analysis_status: AiAnalysisStatus;
+  ai_summary: string | null;
+  detected_skills: unknown | null;
+  detected_mistakes: unknown | null;
+  recommended_next_steps: unknown | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type HomeworkAttachment = {
+  id: string;
+  submission_id: string;
+  storage_path: string | null;
+  url: string | null;
+  mime_type: string;
+  size_bytes: number;
+  original_name: string;
+  created_at: string;
+};
+
+/** A submission joined with its subject/track and attachments, for the inbox. */
+export type HomeworkSubmissionRow = HomeworkSubmission & {
+  subject: Pick<Subject, "id" | "name" | "color"> | null;
+  track: Pick<SubjectTrack, "id" | "name" | "color"> | null;
+  attachments: HomeworkAttachment[];
+};
+
 export type MissionStatus = "not_started" | "in_progress" | "completed";
 
 export type DailyMission = {

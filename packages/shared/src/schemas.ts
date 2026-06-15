@@ -185,3 +185,86 @@ export const WeeklyGoalIncrementInput = z.object({
   delta: z.number().min(-100000).max(100000),
 });
 export type WeeklyGoalIncrementInput = z.infer<typeof WeeklyGoalIncrementInput>;
+
+/**
+ * Homework Inbox (PRD §10.8; ADR 0008). Allowed attachment types and per-file
+ * size cap — one source of truth shared by the client (pre-upload validation),
+ * the command schema, and the Storage bucket policy. Decided: images + PDF
+ * only, 5 MB/file.
+ */
+export const HOMEWORK_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/heic",
+  "application/pdf",
+] as const;
+export const HOMEWORK_MAX_FILE_BYTES = 5 * 1024 * 1024;
+export const HOMEWORK_MAX_ATTACHMENTS = 10;
+
+/** A submission's review lifecycle (parent-driven). */
+export const HomeworkReviewStatus = z.enum([
+  "submitted",
+  "reviewed",
+  "needs_correction",
+  "mastered",
+]);
+export type HomeworkReviewStatus = z.infer<typeof HomeworkReviewStatus>;
+
+/**
+ * Metadata for one uploaded file. The browser uploads the bytes directly to
+ * Supabase Storage (never through a Vercel function, ADR 0008), then submits
+ * this metadata; `storagePath` is the resulting object key.
+ */
+export const HomeworkAttachmentInput = z.object({
+  storagePath: trimmed(500),
+  mimeType: z.enum(HOMEWORK_MIME_TYPES),
+  sizeBytes: z.number().int().positive().max(HOMEWORK_MAX_FILE_BYTES),
+  originalName: trimmed(255),
+});
+export type HomeworkAttachmentInput = z.infer<typeof HomeworkAttachmentInput>;
+
+/**
+ * Submit a homework artifact for a student. A submission must carry text and/or
+ * at least one attachment. `subjectId` / `subjectTrackId` are optional track
+ * attribution (ADR 0005); `submissionDate` defaults to today server-side.
+ */
+export const HomeworkSubmitInput = z
+  .object({
+    studentId: uuid,
+    subjectId: uuid.optional(),
+    subjectTrackId: uuid.optional(),
+    topic: z.string().trim().max(120).optional(),
+    assignmentTitle: z.string().trim().max(200).optional(),
+    submissionDate: isoDate.optional(),
+    rawText: z.string().trim().max(20000).optional(),
+    studentNotes: z.string().trim().max(2000).optional(),
+    attachments: HomeworkAttachmentInput.array()
+      .max(HOMEWORK_MAX_ATTACHMENTS)
+      .optional(),
+  })
+  .refine(
+    (s) => (s.rawText?.length ?? 0) > 0 || (s.attachments?.length ?? 0) > 0,
+    { message: "a submission needs text or at least one file" },
+  );
+export type HomeworkSubmitInput = z.infer<typeof HomeworkSubmitInput>;
+
+/** Parent review of a submission: set status and (optionally) parent notes. */
+export const HomeworkReviewInput = z.object({
+  id: uuid,
+  reviewStatus: HomeworkReviewStatus,
+  parentNotes: z.string().trim().max(2000).nullable().optional(),
+});
+export type HomeworkReviewInput = z.infer<typeof HomeworkReviewInput>;
+
+/**
+ * Derive a submission's `source_type` from its attachments (pure; used by the
+ * submit handler). PDF wins over image; no files ⇒ plain text.
+ */
+export function homeworkSourceType(
+  attachments?: { mimeType: string }[] | null,
+): "text" | "photo" | "pdf" {
+  if (!attachments || attachments.length === 0) return "text";
+  if (attachments.some((a) => a.mimeType === "application/pdf")) return "pdf";
+  if (attachments.some((a) => a.mimeType.startsWith("image/"))) return "photo";
+  return "text";
+}

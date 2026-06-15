@@ -21,6 +21,9 @@ Significant architecture decisions also get a numbered ADR under `../adr/`.
 | 2026-06-14 | **Stage 4 weekly goals (Quest Board)** built: `0004_weekly_goals.sql` (`weekly_goals` + RLS + `increment_weekly_goal` RPC), 4 new commands (`weeklyGoal.create/update/delete/incrementProgress`), `/quests` week-scoped board (`GoalCard` + progress bars + manual +/− / complete / archive / delete), dashboard "XP this week" + this-week goal progress. | Outcome-based weekly goals (AC 13) + dashboard weekly progress (AC 12), free-tier safe (read-time aggregates, no cron). Decided: goals are **week-scoped** and progress is **manual** in the MVP (no auto-derivation from missions); goals are **separate from XP** (completing a goal awards no XP); a goal **auto-completes** when current ≥ target; status enum = active/completed/archived; **no seed goals** (per-student and date-bound — parent creates them). |
 | 2026-06-14 | Stage 4 added **no new ADR** — it implements PRD §10.6/§12 directly and reuses existing decisions (command surface ADR 0007, track attribution ADR 0005). | Not every stage is an architecture fork; a spec-driven feature on established patterns doesn't warrant an ADR. |
 | 2026-06-14 | **Working agreement:** at any genuinely new architectural fork, Claude proposes a numbered ADR (Context / Decision / Status / Consequences) for human review **before** writing code; spec-driven features that reuse existing ADRs/patterns just get a decisions-log row. Next likely ADRs: homework file/metadata model (Stage 5, ADR 0003 lands here), agent-token auth & gateway transport (Stage 8, ADR 0007). | Keep durable rationale captured where it matters without ceremony on routine work. Reinforces the requirements-first, human-reviewed workflow. |
+| 2026-06-14 | **Homework attachments via Supabase Storage** (ADR 0008, amends ADR 0003): private `homework` bucket, browser→Storage uploads via signed URLs (never through Vercel functions), Storage RLS via `owns_student()`, metadata-only in Postgres (`homework_submissions` + `homework_attachments`). Decided: images + PDF only (PNG/JPG/HEIC/PDF), **5 MB**/file, one submission = text and/or multiple attachments. Reserved nullable `url` column for a future Google Drive / external-link connector. | Parent wants real homework capture (photos of handwritten work, scanned PDFs) within Vercel-Hobby/Supabase-Free limits. Drive API rejected for MVP (OAuth + server hop); link-only deferred. |
+| 2026-06-14 | **App timezone = Pacific** (`America/Los_Angeles`, DST-aware). `lib/date.ts` `todayISO()` now returns the Pacific calendar day, so today's missions, the Quest Board week, the schedule, and the weekly XP window all use the family's local day; the homework `submission_date` DB default is set to Pacific to match (`0006_…`). | The household is in Pacific; UTC `today` mis-dated late-evening activity by a day. Replaces the Stage-1/3 UTC-day assumption for a single-household MVP. Per-student timezones remain deferred (ADR 0006). |
+| 2026-06-14 | **Stage 5 Homework Inbox** built (ADR 0008): `0005_homework.sql` (`homework_submissions` + `homework_attachments` + private `homework` Storage bucket + Storage RLS), 2 new commands (`homework.submit`, `homework.review`), `/homework` inbox (text + image/PDF submission via direct browser→Storage upload, paginated list with signed-URL previews, parent review panel), dashboard "to review" count + Homework link. Security review committed at `docs/specs/stage5-homework-security-review.md`. | Closes AC 14/15/16/29/30 (homework capture + review, AI-ready, file upload enabled) within free-tier limits. Decided: review_status = submitted/reviewed/needs_correction/mastered (PRD §10.8); `source_type` derived (pdf>photo>text); 5 MB/images+PDF enforced at client+schema+bucket; AI fields stored but never processed. |
 
 ## Open decisions / to revisit
 
@@ -46,11 +49,12 @@ Significant architecture decisions also get a numbered ADR under `../adr/`.
 - **Stage 1 ad-hoc missions:** `daily_missions.schedule_block_id` is null in Stage 1, so
   the `unique(student_id, date, schedule_block_id)` constraint permits multiple ad-hoc
   missions per day (NULLs are distinct). Schedule-block FK + dedup arrive in Stage 3.
-- **Calendar timezone (Stage 3):** all schedule date/time math is **UTC** for now
-  (consistent with `lib/date.ts` `todayISO()` and `lib/missions/recurrence.ts`). Per-student
-  timezones are deferred — a student in a non-UTC zone may see a block's day/time shifted.
-  Revisit before multi-timezone use; the schema stores `timestamptz`, so no migration is
-  needed, only read-time conversion.
+- **Calendar timezone (Stage 3 / updated 2026-06-14):** "today" is now **Pacific**
+  (`lib/date.ts` `todayISO()`), but schedule block **times** (`start_at`/`end_at`) and the
+  weekly XP window's instant boundary are still computed/displayed in **UTC**. So the
+  current day is correct for a Pacific household, but a block's clock time may read shifted.
+  Full per-instant timezone correctness (and per-student timezones) is still deferred; the
+  schema stores `timestamptz`, so only read-time conversion is needed later.
 - **Streak recalculation (Stage 3):** still not implemented — `current_streak` stays a
   displayed default. Now that the calendar exists it can be recomputed on read from
   completed missions; tracked for a later stage.
@@ -58,3 +62,8 @@ Significant architecture decisions also get a numbered ADR under `../adr/`.
   (`increment_weekly_goal`). Auto-deriving progress from completed missions/homework (e.g.
   "+1 per AoPS mission") is deferred — would link `weekly_goals` to a metric source; revisit
   with the analytics/AI work. Goals are also intentionally **separate from XP** for now.
+- **Orphaned homework Storage objects (Stage 5):** files upload browser→Storage before the
+  `homework.submit` row is written; if submit fails or the user leaves, the objects linger
+  (still RLS-private, count against the family's own quota). No cleanup sweep — no cron on
+  the free tier. Accepted MVP tradeoff; revisit if cost/clutter becomes real. See
+  `docs/specs/stage5-homework-security-review.md`.

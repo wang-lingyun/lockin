@@ -16,6 +16,8 @@ import {
   WeeklyGoalUpdateInput,
   WeeklyGoalDeleteInput,
   WeeklyGoalIncrementInput,
+  HomeworkSubmitInput,
+  HomeworkReviewInput,
   type CommandName,
 } from "@lockin/shared";
 import type { CommandDefinition } from "./types";
@@ -36,6 +38,8 @@ import {
   weeklyGoalUpdate,
   weeklyGoalDelete,
   weeklyGoalIncrement,
+  homeworkSubmit,
+  homeworkReview,
 } from "./handlers";
 
 type AnyHandler = CommandDefinition<unknown, unknown>["handler"];
@@ -109,5 +113,13 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
   [COMMANDS.weeklyGoalIncrement]: {
     schema: WeeklyGoalIncrementInput,
     handler: weeklyGoalIncrement as AnyHandler,
+  },
+  [COMMANDS.homeworkSubmit]: {
+    schema: HomeworkSubmitInput,
+    handler: homeworkSubmit as AnyHandler,
+  },
+  [COMMANDS.homeworkReview]: {
+    schema: HomeworkReviewInput,
+    handler: homeworkReview as AnyHandler,
   },
 };

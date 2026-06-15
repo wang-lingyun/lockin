@@ -41,7 +41,15 @@ export default async function Dashboard({
   const weekStart = weekStartFor(today);
   let weeklyXp = 0;
   let weeklyGoals: WeeklyGoal[] = [];
+  let toReview = 0;
   if (active) {
+    const { count } = await supabase
+      .from("homework_submissions")
+      .select("id", { count: "exact", head: true })
+      .eq("student_id", active.id)
+      .eq("review_status", "submitted");
+    toReview = count ?? 0;
+
     const { data: xpRows } = await supabase
       .from("xp_events")
       .select("amount")
@@ -80,6 +88,12 @@ export default async function Dashboard({
           <p className="text-sm text-muted">{parent.email}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/homework"
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
+          >
+            Homework
+          </Link>
           <Link
             href="/quests"
             className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
@@ -152,6 +166,11 @@ export default async function Dashboard({
                 <span className="flex items-center gap-3 text-sm text-muted">
                   <span>⚡ +{weeklyXp} XP this week</span>
                   <span>🔥 {active.current_streak} day streak</span>
+                  {toReview > 0 ? (
+                    <Link href="/homework" className="text-accent hover:underline">
+                      📥 {toReview} to review
+                    </Link>
+                  ) : null}
                 </span>
               </div>
 

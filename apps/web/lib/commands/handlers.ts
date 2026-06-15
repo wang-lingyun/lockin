@@ -15,7 +15,10 @@ import type {
   WeeklyGoalUpdateInput,
   WeeklyGoalDeleteInput,
   WeeklyGoalIncrementInput,
+  HomeworkSubmitInput,
+  HomeworkReviewInput,
 } from "@lockin/shared";
+import { homeworkSourceType } from "@lockin/shared";
 import type {
   Student,
   Task,
@@ -26,6 +29,7 @@ import type {
   StudentSubjectTrack,
   ScheduleBlock,
   WeeklyGoal,
+  HomeworkSubmission,
 } from "@/lib/db/types";
 import type { CommandContext } from "./types";
 
@@ -391,4 +395,80 @@ export async function weeklyGoalIncrement(
     .single();
   if (error) throw new Error(error.message);
   return data as WeeklyGoal;
+}
+
+/**
+ * Record a homework submission and its attachment metadata. The file bytes are
+ * already in Storage (uploaded browser→Storage, ADR 0008); this only writes
+ * Postgres rows. RLS (`with check owns_student`) enforces ownership on insert.
+ * If the attachment insert fails, the submission row is rolled back so no
+ * orphaned metadata is left behind.
+ */
+export async function homeworkSubmit(
+  input: HomeworkSubmitInput,
+  ctx: CommandContext,
+): Promise<HomeworkSubmission> {
+  const row: Record<string, unknown> = {
+    student_id: input.studentId,
+    subject_id: input.subjectId ?? null,
+    subject_track_id: input.subjectTrackId ?? null,
+    topic: input.topic ?? null,
+    assignment_title: input.assignmentTitle ?? null,
+    raw_text: input.rawText ?? null,
+    student_notes: input.studentNotes ?? null,
+    source_type: homeworkSourceType(input.attachments),
+  };
+  // Only set submission_date when provided; otherwise let the column default
+  // (current_date) apply — inserting an explicit null would violate NOT NULL.
+  if (input.submissionDate) row.submission_date = input.submissionDate;
+
+  const { data, error } = await ctx.supabase
+    .from("homework_submissions")
+    .insert(row)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  const submission = data as HomeworkSubmission;
+
+  if (input.attachments && input.attachments.length > 0) {
+    const { error: attErr } = await ctx.supabase
+      .from("homework_attachments")
+      .insert(
+        input.attachments.map((a) => ({
+          submission_id: submission.id,
+          storage_path: a.storagePath,
+          mime_type: a.mimeType,
+          size_bytes: a.sizeBytes,
+          original_name: a.originalName,
+        })),
+      );
+    if (attErr) {
+      // Roll back the submission so we never leave a row without its files.
+      await ctx.supabase
+        .from("homework_submissions")
+        .delete()
+        .eq("id", submission.id);
+      throw new Error(attErr.message);
+    }
+  }
+
+  return submission;
+}
+
+/** Parent review: set review status and optional notes. */
+export async function homeworkReview(
+  input: HomeworkReviewInput,
+  ctx: CommandContext,
+): Promise<HomeworkSubmission> {
+  const patch: Record<string, unknown> = { review_status: input.reviewStatus };
+  if (input.parentNotes !== undefined) patch.parent_notes = input.parentNotes;
+
+  const { data, error } = await ctx.supabase
+    .from("homework_submissions")
+    .update(patch)
+    .eq("id", input.id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as HomeworkSubmission;
 }

@@ -20,6 +20,8 @@ export const COMMANDS = {
   weeklyGoalUpdate: "weeklyGoal.update",
   weeklyGoalDelete: "weeklyGoal.delete",
   weeklyGoalIncrement: "weeklyGoal.incrementProgress",
+  homeworkSubmit: "homework.submit",
+  homeworkReview: "homework.review",
 } as const;
 
 export type CommandName = (typeof COMMANDS)[keyof typeof COMMANDS];
