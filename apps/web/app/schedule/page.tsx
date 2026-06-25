@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { requireParent } from "@/lib/auth/session";
 import { todayISO } from "@/lib/date";
+import { withStudent } from "@/lib/nav/withStudent";
 import {
   expandWeek,
   weekStartFor,
   addDaysISO,
 } from "@/lib/missions/recurrence";
 import type { Student, ScheduleBlock } from "@/lib/db/types";
+import { AppHeader } from "../_components/AppHeader";
 import { AddBlockForm } from "./_components/AddBlockForm";
+import { EditBlockForm } from "./_components/EditBlockForm";
 import { deleteBlockAction } from "./actions";
 
 export const metadata = { title: "Schedule · LockIn" };
@@ -99,51 +102,23 @@ export default async function SchedulePage({
   }
 
   const sw = (date: string) =>
-    `/schedule?week=${date}${active ? `&student=${active.id}` : ""}`;
+    withStudent("/schedule", active?.id, { week: date });
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Schedule</h1>
-          <p className="text-sm text-muted">
-            Plan recurring and one-off blocks. Today&apos;s missions are derived
-            from this on read.
-          </p>
-        </div>
-        <Link
-          href="/"
-          className="rounded-md border border-border px-3 py-1.5 text-sm text-muted hover:text-text"
-        >
-          ← Dashboard
-        </Link>
-      </header>
+      <AppHeader
+        email={parent.email}
+        students={students}
+        activeId={active?.id ?? null}
+        current="schedule"
+      />
 
       {students.length === 0 ? (
         <p className="rounded-xl border border-border bg-surface p-6 text-sm text-muted">
-          Add a student on the dashboard first.
+          Add a student in Manage first.
         </p>
       ) : (
         <>
-          <nav className="mb-6 flex flex-wrap gap-2">
-            {students.map((s) => {
-              const isActive = active?.id === s.id;
-              return (
-                <Link
-                  key={s.id}
-                  href={`/schedule?student=${s.id}`}
-                  className={`rounded-full border px-4 py-1.5 text-sm transition ${
-                    isActive
-                      ? "border-primary bg-primary text-primary-fg"
-                      : "border-border text-muted hover:text-text"
-                  }`}
-                >
-                  {s.name}
-                </Link>
-              );
-            })}
-          </nav>
-
           {active ? (
             <>
               <section className="mb-6 rounded-xl border border-border bg-surface p-5">
@@ -208,34 +183,55 @@ export default async function SchedulePage({
                             return (
                               <li
                                 key={b.id}
-                                className="flex items-center justify-between gap-3 rounded-lg bg-surface-2 px-4 py-3"
+                                className="rounded-lg bg-surface-2 px-4 py-3"
                               >
-                                <div className="flex min-w-0 items-center gap-3">
-                                  <span
-                                    className="inline-block h-8 w-1 shrink-0 rounded-full"
-                                    style={{ background: color }}
+                                <details className="group">
+                                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+                                    <div className="flex min-w-0 items-center gap-3">
+                                      <span
+                                        className="inline-block h-8 w-1 shrink-0 rounded-full"
+                                        style={{ background: color }}
+                                      />
+                                      <div className="min-w-0">
+                                        <p className="truncate text-sm text-text">
+                                          {b.title}
+                                          {b.recurrence_rule ? (
+                                            <span className="ml-2 text-xs text-muted">
+                                              ↻
+                                            </span>
+                                          ) : null}
+                                        </p>
+                                        <p className="text-xs text-muted">
+                                          {blockTime(b)}
+                                          {label ? ` · ${label}` : ""}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <span className="shrink-0 text-xs text-muted group-open:hidden">
+                                      Edit
+                                    </span>
+                                    <span className="hidden shrink-0 text-xs text-muted group-open:inline">
+                                      Close
+                                    </span>
+                                  </summary>
+
+                                  <EditBlockForm
+                                    block={b}
+                                    subjects={subjects}
+                                    tracks={tracks}
+                                    tasks={tasks}
                                   />
-                                  <div className="min-w-0">
-                                    <p className="truncate text-sm text-text">
-                                      {b.title}
-                                      {b.recurrence_rule ? (
-                                        <span className="ml-2 text-xs text-muted">
-                                          ↻
-                                        </span>
-                                      ) : null}
-                                    </p>
-                                    <p className="text-xs text-muted">
-                                      {blockTime(b)}
-                                      {label ? ` · ${label}` : ""}
-                                    </p>
-                                  </div>
-                                </div>
-                                <form action={deleteBlockAction}>
-                                  <input type="hidden" name="id" value={b.id} />
-                                  <button className="shrink-0 rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-danger">
-                                    Delete
-                                  </button>
-                                </form>
+
+                                  <form
+                                    action={deleteBlockAction}
+                                    className="mt-3 flex justify-end"
+                                  >
+                                    <input type="hidden" name="id" value={b.id} />
+                                    <button className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-danger">
+                                      Delete block
+                                    </button>
+                                  </form>
+                                </details>
                               </li>
                             );
                           })}

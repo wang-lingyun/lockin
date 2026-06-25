@@ -59,6 +59,44 @@ export async function createBlockAction(
   return null;
 }
 
+export async function updateBlockAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parent = await requireParent();
+
+  const date = String(formData.get("date") ?? "");
+  const allDay = formData.get("allDay") === "on";
+  const startTime = String(formData.get("startTime") ?? "");
+  const endTime = String(formData.get("endTime") ?? "");
+  const repeat = String(formData.get("repeat") ?? "none") as
+    | "none"
+    | "daily"
+    | "weekly";
+  const byweekday = formData.getAll("byweekday").map(String);
+
+  // Editing allows clearing optional fields, so empty values map to null
+  // (not undefined) — the update handler only patches keys that are present.
+  const result = await dispatch(
+    COMMANDS.scheduleBlockUpdate,
+    {
+      id: String(formData.get("id") ?? ""),
+      title: String(formData.get("title") ?? ""),
+      subjectId: String(formData.get("subjectId") ?? "") || null,
+      subjectTrackId: String(formData.get("subjectTrackId") ?? "") || null,
+      taskId: String(formData.get("taskId") ?? "") || null,
+      allDay,
+      startAt: allDay ? toUtcISO(date, "") : toUtcISO(date, startTime),
+      endAt: !allDay && endTime ? toUtcISO(date, endTime) : null,
+      recurrenceRule: buildRRule(repeat, byweekday),
+    },
+    uiCommandContext(parent),
+  );
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/schedule");
+  return null;
+}
+
 export async function deleteBlockAction(formData: FormData): Promise<void> {
   const parent = await requireParent();
   await dispatch(

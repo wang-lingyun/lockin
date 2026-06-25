@@ -89,3 +89,24 @@ export function buildRRule(
   }
   return null;
 }
+
+/**
+ * Inverse of `buildRRule` for prefilling the edit form: map a stored RRULE back
+ * to the friendly preset. Only the presets the form can produce are recognized;
+ * anything else (e.g. an agent-set MONTHLY rule) falls back to "none".
+ */
+export function parseRRule(rule: string | null): {
+  repeat: "none" | "daily" | "weekly";
+  byweekday: string[];
+} {
+  if (!rule) return { repeat: "none", byweekday: [] };
+  if (/FREQ=DAILY/i.test(rule)) return { repeat: "daily", byweekday: [] };
+  if (/FREQ=WEEKLY/i.test(rule)) {
+    const m = rule.match(/BYDAY=([^;]+)/i);
+    const byweekday = m
+      ? m[1].split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)
+      : [];
+    return { repeat: "weekly", byweekday };
+  }
+  return { repeat: "none", byweekday: [] };
+}

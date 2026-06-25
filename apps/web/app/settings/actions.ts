@@ -39,3 +39,97 @@ export async function setTrackPriorityAction(formData: FormData): Promise<void> 
   );
   revalidatePath("/settings");
 }
+
+/* ----- Subject & track management (parent-owned; RLS gates ownership) ----- */
+
+type ActionState = { error: string } | null;
+
+/** Create a new parent-owned subject (e.g. a custom "Math"). */
+export async function createSubjectAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parent = await requireParent();
+  const result = await dispatch(
+    COMMANDS.subjectCreate,
+    {
+      name: String(formData.get("name") ?? ""),
+      color: String(formData.get("color") ?? "") || undefined,
+    },
+    uiCommandContext(parent),
+  );
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/settings");
+  return null;
+}
+
+/** Rename a parent-owned subject. */
+export async function renameSubjectAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parent = await requireParent();
+  const result = await dispatch(
+    COMMANDS.subjectUpdate,
+    {
+      id: String(formData.get("id") ?? ""),
+      name: String(formData.get("name") ?? ""),
+    },
+    uiCommandContext(parent),
+  );
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/settings");
+  return null;
+}
+
+/** Add a sub-category (track) under a subject. */
+export async function createTrackAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parent = await requireParent();
+  const result = await dispatch(
+    COMMANDS.trackCreate,
+    {
+      subjectId: String(formData.get("subjectId") ?? ""),
+      name: String(formData.get("name") ?? ""),
+    },
+    uiCommandContext(parent),
+  );
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/settings");
+  return null;
+}
+
+/** Rename a parent-owned track. */
+export async function renameTrackAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parent = await requireParent();
+  const result = await dispatch(
+    COMMANDS.trackUpdate,
+    {
+      id: String(formData.get("id") ?? ""),
+      name: String(formData.get("name") ?? ""),
+    },
+    uiCommandContext(parent),
+  );
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/settings");
+  return null;
+}
+
+/** Toggle a parent-owned track's active flag (hide it without deleting). */
+export async function setTrackActiveAction(formData: FormData): Promise<void> {
+  const parent = await requireParent();
+  await dispatch(
+    COMMANDS.trackUpdate,
+    {
+      id: String(formData.get("id") ?? ""),
+      isActive: formData.get("isActive") === "true",
+    },
+    uiCommandContext(parent),
+  );
+  revalidatePath("/settings");
+}

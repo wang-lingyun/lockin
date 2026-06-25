@@ -63,6 +63,16 @@ export const SubjectCreateInput = z.object({
 });
 export type SubjectCreateInput = z.infer<typeof SubjectCreateInput>;
 
+/** Rename / restyle a parent-owned subject (RLS blocks edits to defaults). */
+export const SubjectUpdateInput = z.object({
+  id: uuid,
+  name: trimmed(60).optional(),
+  description: z.string().trim().max(500).nullable().optional(),
+  icon: z.string().trim().max(40).nullable().optional(),
+  color: z.string().trim().max(20).nullable().optional(),
+});
+export type SubjectUpdateInput = z.infer<typeof SubjectUpdateInput>;
+
 /** Create a track (sub-subject) under a subject. */
 export const TrackCreateInput = z.object({
   subjectId: uuid,
@@ -73,6 +83,18 @@ export const TrackCreateInput = z.object({
   sortOrder: z.number().int().min(0).max(1000).optional(),
 });
 export type TrackCreateInput = z.infer<typeof TrackCreateInput>;
+
+/** Rename / restyle / (de)activate a parent-owned track. */
+export const TrackUpdateInput = z.object({
+  id: uuid,
+  name: trimmed(60).optional(),
+  description: z.string().trim().max(500).nullable().optional(),
+  icon: z.string().trim().max(40).nullable().optional(),
+  color: z.string().trim().max(20).nullable().optional(),
+  sortOrder: z.number().int().min(0).max(1000).optional(),
+  isActive: z.boolean().optional(),
+});
+export type TrackUpdateInput = z.infer<typeof TrackUpdateInput>;
 
 /** Set a student's priority for a subject (upsert). */
 export const SetSubjectPriorityInput = z.object({

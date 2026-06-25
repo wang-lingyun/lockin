@@ -4,7 +4,9 @@ import type {
   TaskAssignInput,
   MissionCompleteInput,
   SubjectCreateInput,
+  SubjectUpdateInput,
   TrackCreateInput,
+  TrackUpdateInput,
   SetSubjectPriorityInput,
   SetTrackPriorityInput,
   ScheduleBlockCreateInput,
@@ -158,6 +160,36 @@ export async function subjectCreate(
   return data as Subject;
 }
 
+/**
+ * Rename / restyle a parent-owned subject. RLS ("write own") matches no row for
+ * default or other parents' subjects, so this can only edit the caller's own.
+ */
+export async function subjectUpdate(
+  input: SubjectUpdateInput,
+  ctx: CommandContext,
+): Promise<Subject> {
+  const { id, ...rest } = input;
+  const patch: Record<string, unknown> = {};
+  const map: Record<string, string> = {
+    name: "name",
+    description: "description",
+    icon: "icon",
+    color: "color",
+  };
+  for (const [k, v] of Object.entries(rest)) {
+    if (v !== undefined) patch[map[k]] = v;
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("subjects")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Subject;
+}
+
 export async function trackCreate(
   input: TrackCreateInput,
   ctx: CommandContext,
@@ -174,6 +206,35 @@ export async function trackCreate(
       is_default: false,
       owner_parent_id: ctx.parentUserId,
     })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as SubjectTrack;
+}
+
+/** Rename / restyle / (de)activate a parent-owned track (RLS gates ownership). */
+export async function trackUpdate(
+  input: TrackUpdateInput,
+  ctx: CommandContext,
+): Promise<SubjectTrack> {
+  const { id, ...rest } = input;
+  const patch: Record<string, unknown> = {};
+  const map: Record<string, string> = {
+    name: "name",
+    description: "description",
+    icon: "icon",
+    color: "color",
+    sortOrder: "sort_order",
+    isActive: "is_active",
+  };
+  for (const [k, v] of Object.entries(rest)) {
+    if (v !== undefined) patch[map[k]] = v;
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("subject_tracks")
+    .update(patch)
+    .eq("id", id)
     .select()
     .single();
   if (error) throw new Error(error.message);

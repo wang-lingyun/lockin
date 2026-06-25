@@ -5,7 +5,9 @@ import {
   TaskAssignInput,
   MissionCompleteInput,
   SubjectCreateInput,
+  SubjectUpdateInput,
   TrackCreateInput,
+  TrackUpdateInput,
   SetSubjectPriorityInput,
   SetTrackPriorityInput,
   ScheduleBlockCreateInput,
@@ -43,7 +45,9 @@ import {
   taskAssign,
   missionComplete,
   subjectCreate,
+  subjectUpdate,
   trackCreate,
+  trackUpdate,
   studentSetSubjectPriority,
   studentSetTrackPriority,
   scheduleBlockCreate,
@@ -102,9 +106,17 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
     schema: SubjectCreateInput,
     handler: subjectCreate as AnyHandler,
   },
+  [COMMANDS.subjectUpdate]: {
+    schema: SubjectUpdateInput,
+    handler: subjectUpdate as AnyHandler,
+  },
   [COMMANDS.trackCreate]: {
     schema: TrackCreateInput,
     handler: trackCreate as AnyHandler,
+  },
+  [COMMANDS.trackUpdate]: {
+    schema: TrackUpdateInput,
+    handler: trackUpdate as AnyHandler,
   },
   [COMMANDS.studentSetSubjectPriority]: {
     schema: SetSubjectPriorityInput,
