@@ -44,6 +44,7 @@ export async function createTaskAction(
     {
       title: String(formData.get("title") ?? ""),
       subjectId: String(formData.get("subjectId") ?? "") || undefined,
+      subjectTrackId: String(formData.get("subjectTrackId") ?? "") || undefined,
       estimatedMinutes:
         hoursRaw === "" ? undefined : Math.round(Number(hoursRaw) * 60),
     },
@@ -51,6 +52,7 @@ export async function createTaskAction(
   );
   if (!result.ok) return { error: result.error };
   revalidatePath("/");
+  revalidatePath("/manage");
   return null;
 }
 

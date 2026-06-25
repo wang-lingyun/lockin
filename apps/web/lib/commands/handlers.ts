@@ -80,6 +80,7 @@ export async function taskCreate(
       title: input.title,
       description: input.description ?? null,
       subject_id: input.subjectId ?? null,
+      subject_track_id: input.subjectTrackId ?? null,
       estimated_minutes: input.estimatedMinutes ?? null,
       created_by: ctx.parentUserId,
     })

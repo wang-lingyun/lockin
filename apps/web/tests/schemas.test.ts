@@ -41,6 +41,15 @@ describe("TaskCreateInput", () => {
       TaskCreateInput.safeParse({ title: "x", subjectId: "nope" }).success,
     ).toBe(false);
   });
+
+  it("accepts an optional subjectTrackId and rejects a non-uuid one", () => {
+    expect(
+      TaskCreateInput.safeParse({ title: "x", subjectTrackId: UUID }).success,
+    ).toBe(true);
+    expect(
+      TaskCreateInput.safeParse({ title: "x", subjectTrackId: "nope" }).success,
+    ).toBe(false);
+  });
 });
 
 describe("TaskAssignInput", () => {

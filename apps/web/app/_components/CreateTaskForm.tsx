@@ -1,19 +1,31 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createTaskAction } from "../actions";
 
 type ActionState = { error: string } | null;
 type SubjectOption = { id: string; name: string };
+type TrackOption = { id: string; name: string; subject_id: string };
 
 const input =
   "rounded-md border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-primary";
 
-export function CreateTaskForm({ subjects }: { subjects: SubjectOption[] }) {
+export function CreateTaskForm({
+  subjects,
+  tracks = [],
+}: {
+  subjects: SubjectOption[];
+  tracks?: TrackOption[];
+}) {
   const [state, action, pending] = useActionState<ActionState, FormData>(
     createTaskAction,
     null,
   );
+
+  // Track options depend on the chosen subject; clear the track when the
+  // subject changes so we never submit a track from a different subject.
+  const [subjectId, setSubjectId] = useState("");
+  const subjectTracks = tracks.filter((t) => t.subject_id === subjectId);
 
   return (
     <form action={action} className="flex flex-wrap items-end gap-3">
@@ -28,7 +40,12 @@ export function CreateTaskForm({ subjects }: { subjects: SubjectOption[] }) {
       </label>
       <label className="flex flex-col gap-1">
         <span className="text-xs text-muted">Subject</span>
-        <select name="subjectId" className={input} defaultValue="">
+        <select
+          name="subjectId"
+          className={input}
+          value={subjectId}
+          onChange={(e) => setSubjectId(e.target.value)}
+        >
           <option value="">—</option>
           {subjects.map((s) => (
             <option key={s.id} value={s.id}>
@@ -37,6 +54,19 @@ export function CreateTaskForm({ subjects }: { subjects: SubjectOption[] }) {
           ))}
         </select>
       </label>
+      {subjectTracks.length > 0 ? (
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-muted">Track</span>
+          <select name="subjectTrackId" className={input} defaultValue="">
+            <option value="">— (whole subject)</option>
+            {subjectTracks.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <label className="flex w-28 flex-col gap-1">
         <span className="text-xs text-muted">Target (h)</span>
         <input

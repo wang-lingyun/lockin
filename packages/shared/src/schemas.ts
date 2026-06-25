@@ -23,6 +23,7 @@ export const TaskCreateInput = z.object({
   title: trimmed(160),
   description: z.string().trim().max(2000).optional(),
   subjectId: uuid.optional(),
+  subjectTrackId: uuid.optional(),
   estimatedMinutes: z.number().int().min(0).max(600).optional(),
 });
 export type TaskCreateInput = z.infer<typeof TaskCreateInput>;

@@ -44,6 +44,15 @@ export default async function ManagePage({
     .select("id,name")
     .order("name", { ascending: true });
 
+  // Active tracks for the "Create a task" form's track picker (RLS already
+  // limits reads to default-or-own; hidden tracks are excluded).
+  const { data: tracks } = await supabase
+    .from("subject_tracks")
+    .select("id,name,subject_id")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+
   // Tasks for the assign form, scoped to the active student's *active* subjects
   // & tracks (priority not "inactive"; absence => inactive, per ADR 0005 — the
   // same rule Settings uses). A task is offered if its most-specific attribution
@@ -136,7 +145,7 @@ export default async function ManagePage({
           )}
         </Panel>
         <Panel title="Create a task">
-          <CreateTaskForm subjects={subjects ?? []} />
+          <CreateTaskForm subjects={subjects ?? []} tracks={tracks ?? []} />
         </Panel>
       </section>
     </main>
