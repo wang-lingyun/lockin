@@ -82,6 +82,9 @@ export function AppHeader({
   const mode = modeOf(current);
   const secondary = mode === "manage" ? MANAGE_LINKS : TODAY_LINKS;
   const basePath = HREF_BY_KEY[current];
+  // On a Manage sub-page (Settings, Schedule, …) offer a clear way back to the
+  // Manage home. The Manage home itself stays decluttered (no back link).
+  const showBackToManage = mode === "manage" && current !== "manage";
 
   const toggle = (item: NavItem, active: boolean) => (
     <Link
@@ -121,6 +124,17 @@ export function AppHeader({
         activeId={activeId}
         basePath={basePath}
       />
+
+      {showBackToManage ? (
+        <nav className="flex flex-wrap gap-2">
+          <Link
+            href={withStudent("/manage", activeId)}
+            className="rounded-md border border-border px-3 py-1.5 text-sm text-muted transition hover:text-text"
+          >
+            ← Manage
+          </Link>
+        </nav>
+      ) : null}
 
       {secondary.length > 0 ? (
       <nav className="flex flex-wrap gap-2">
