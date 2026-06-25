@@ -7,6 +7,7 @@ import {
   TaskAssignInput,
   MissionCompleteInput,
   MissionUncompleteInput,
+  MissionDeleteInput,
   SubjectCreateInput,
   SubjectUpdateInput,
   SubjectDeleteInput,
@@ -49,6 +50,7 @@ import {
   taskAssign,
   missionComplete,
   missionUncomplete,
+  missionDelete,
   subjectCreate,
   subjectUpdate,
   subjectDelete,
@@ -117,6 +119,10 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
   [COMMANDS.missionUncomplete]: {
     schema: MissionUncompleteInput,
     handler: missionUncomplete as AnyHandler,
+  },
+  [COMMANDS.missionDelete]: {
+    schema: MissionDeleteInput,
+    handler: missionDelete as AnyHandler,
   },
   [COMMANDS.subjectCreate]: {
     schema: SubjectCreateInput,

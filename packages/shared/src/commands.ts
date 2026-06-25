@@ -23,6 +23,7 @@ export const COMMANDS = {
   scheduleBlockDelete: "schedule.block.delete",
   missionCompleteScheduled: "mission.completeScheduled",
   missionUncomplete: "mission.uncomplete",
+  missionDelete: "mission.delete",
   missionSetReflection: "mission.setReflection",
   weeklyGoalCreate: "weeklyGoal.create",
   weeklyGoalUpdate: "weeklyGoal.update",

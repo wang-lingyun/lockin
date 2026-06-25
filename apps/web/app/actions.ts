@@ -135,6 +135,17 @@ export async function uncompleteMissionAction(
   revalidatePath("/");
 }
 
+/** Remove a persisted mission from today (unwanted assignment or orphan). */
+export async function deleteMissionAction(formData: FormData): Promise<void> {
+  const parent = await requireParent();
+  await dispatch(
+    COMMANDS.missionDelete,
+    { missionId: String(formData.get("missionId") ?? "") },
+    uiCommandContext(parent),
+  );
+  revalidatePath("/");
+}
+
 /**
  * Complete a *virtual* mission derived from a schedule block: the handler
  * materializes the dated mission (idempotent) then marks it done. Used by the

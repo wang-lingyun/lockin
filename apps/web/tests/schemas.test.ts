@@ -5,6 +5,7 @@ import {
   TaskAssignInput,
   MissionCompleteInput,
   MissionUncompleteInput,
+  MissionDeleteInput,
   TaskUpdateInput,
   TaskDeleteInput,
   TrackCreateInput,
@@ -137,6 +138,14 @@ describe("MissionUncompleteInput", () => {
     expect(MissionUncompleteInput.safeParse({ missionId: UUID }).success).toBe(
       true,
     );
+  });
+});
+
+describe("MissionDeleteInput", () => {
+  it("requires a uuid missionId", () => {
+    expect(MissionDeleteInput.safeParse({ missionId: "x" }).success).toBe(false);
+    expect(MissionDeleteInput.safeParse({}).success).toBe(false);
+    expect(MissionDeleteInput.safeParse({ missionId: UUID }).success).toBe(true);
   });
 });
 

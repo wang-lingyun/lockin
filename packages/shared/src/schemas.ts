@@ -71,6 +71,16 @@ export const MissionUncompleteInput = z.object({
 export type MissionUncompleteInput = z.infer<typeof MissionUncompleteInput>;
 
 /**
+ * Remove a persisted mission from a day (e.g. an unwanted assignment or an
+ * orphan left by a deleted task). Virtual schedule-block items aren't missions
+ * yet, so they're cleared by editing the block, not this command.
+ */
+export const MissionDeleteInput = z.object({
+  missionId: uuid,
+});
+export type MissionDeleteInput = z.infer<typeof MissionDeleteInput>;
+
+/**
  * A student's relationship to a subject/track (ADR 0005). `primary` = core,
  * `bonus` = optional/enrichment, `inactive` = explicitly off. Absence of a row
  * also means inactive.

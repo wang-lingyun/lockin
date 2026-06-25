@@ -7,6 +7,7 @@ import {
   completeMissionAction,
   completeScheduledAction,
   uncompleteMissionAction,
+  deleteMissionAction,
 } from "./actions";
 import { AppHeader } from "./_components/AppHeader";
 import { MissionReflection } from "./_components/MissionReflection";
@@ -158,45 +159,66 @@ export default async function Today({
                         </p>
                       </div>
                     </div>
-                    {done ? (
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span className="text-sm text-success">✓ Done</span>
-                        <form action={uncompleteMissionAction}>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {done ? (
+                        <>
+                          <span className="text-sm text-success">✓ Done</span>
+                          <form action={uncompleteMissionAction}>
+                            <input
+                              type="hidden"
+                              name="missionId"
+                              value={m.missionId}
+                            />
+                            <button className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text">
+                              Undo
+                            </button>
+                          </form>
+                        </>
+                      ) : m.source === "mission" ? (
+                        <form action={completeMissionAction}>
                           <input
                             type="hidden"
                             name="missionId"
                             value={m.missionId}
                           />
-                          <button className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text">
-                            Undo
+                          <button className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg hover:opacity-90">
+                            Mark done
                           </button>
                         </form>
-                      </div>
-                    ) : m.source === "mission" ? (
-                      <form action={completeMissionAction}>
-                        <input
-                          type="hidden"
-                          name="missionId"
-                          value={m.missionId}
-                        />
-                        <button className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg hover:opacity-90">
-                          Mark done
-                        </button>
-                      </form>
-                    ) : (
-                      <form action={completeScheduledAction}>
-                        <input type="hidden" name="studentId" value={active.id} />
-                        <input
-                          type="hidden"
-                          name="scheduleBlockId"
-                          value={m.scheduleBlockId}
-                        />
-                        <input type="hidden" name="date" value={today} />
-                        <button className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg hover:opacity-90">
-                          Mark done
-                        </button>
-                      </form>
-                    )}
+                      ) : (
+                        <form action={completeScheduledAction}>
+                          <input
+                            type="hidden"
+                            name="studentId"
+                            value={active.id}
+                          />
+                          <input
+                            type="hidden"
+                            name="scheduleBlockId"
+                            value={m.scheduleBlockId}
+                          />
+                          <input type="hidden" name="date" value={today} />
+                          <button className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg hover:opacity-90">
+                            Mark done
+                          </button>
+                        </form>
+                      )}
+                      {m.source === "mission" ? (
+                        <form action={deleteMissionAction}>
+                          <input
+                            type="hidden"
+                            name="missionId"
+                            value={m.missionId}
+                          />
+                          <button
+                            className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:border-danger hover:text-danger"
+                            aria-label="Remove mission"
+                          >
+                            Remove
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
                     </div>
                     <MissionReflection
                       reflection={m.reflection}

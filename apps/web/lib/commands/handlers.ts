@@ -6,6 +6,7 @@ import type {
   TaskAssignInput,
   MissionCompleteInput,
   MissionUncompleteInput,
+  MissionDeleteInput,
   SubjectCreateInput,
   SubjectUpdateInput,
   SubjectDeleteInput,
@@ -125,11 +126,23 @@ export async function taskUpdate(
   return data as Task;
 }
 
-/** Delete a parent-owned task (RLS gates ownership via `created_by`). */
+/**
+ * Delete a parent-owned task (RLS gates ownership via `created_by`). First clear
+ * any not-yet-completed missions assigned from it — otherwise the FK's
+ * `ON DELETE SET NULL` would leave title-less "orphan" missions on a day.
+ * Completed missions are kept (they happened; they count for streak/history).
+ */
 export async function taskDelete(
   input: TaskDeleteInput,
   ctx: CommandContext,
 ): Promise<{ id: string }> {
+  const { error: missionErr } = await ctx.supabase
+    .from("daily_missions")
+    .delete()
+    .eq("task_id", input.id)
+    .neq("status", "completed");
+  if (missionErr) throw new Error(missionErr.message);
+
   const { error } = await ctx.supabase
     .from("tasks")
     .delete()
@@ -195,6 +208,19 @@ export async function missionUncomplete(
     .single();
   if (error) throw new Error(error.message);
   return data as Student;
+}
+
+/** Remove a persisted mission from a day (RLS gates it via `owns_student`). */
+export async function missionDelete(
+  input: MissionDeleteInput,
+  ctx: CommandContext,
+): Promise<{ id: string }> {
+  const { error } = await ctx.supabase
+    .from("daily_missions")
+    .delete()
+    .eq("id", input.missionId);
+  if (error) throw new Error(error.message);
+  return { id: input.missionId };
 }
 
 export async function subjectCreate(
