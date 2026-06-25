@@ -16,6 +16,7 @@ export type TodayMission = {
   subjectColor: string | null;
   xp: number;
   estimatedMinutes: number | null;
+  reflection: string | null;
   status: MissionStatus;
   missionId?: string;
   scheduleBlockId?: string;
@@ -50,6 +51,7 @@ export async function getTodaysMissions(
     subjectColor: m.subject?.color ?? null,
     xp: m.task?.xp_value ?? 0,
     estimatedMinutes: m.task?.estimated_minutes ?? null,
+    reflection: m.student_reflection ?? null,
     status: m.status,
     missionId: m.id,
   }));
@@ -77,6 +79,7 @@ export async function getTodaysMissions(
       subjectColor: b.subject?.color ?? null,
       xp: b.task?.xp_value ?? 0,
       estimatedMinutes: b.estimated_minutes ?? null,
+      reflection: null,
       status: "not_started",
       scheduleBlockId: b.id,
     });

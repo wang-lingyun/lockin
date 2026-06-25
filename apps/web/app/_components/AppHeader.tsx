@@ -33,17 +33,18 @@ const TODAY_HOME: NavItem = { key: "today", href: "/", label: "Today" };
 const MANAGE_HOME: NavItem = { key: "manage", href: "/manage", label: "Manage" };
 
 // Secondary links within each mode (the mode's home is the toggle itself).
+// Today stays calm — only Reflections; the "doing"/admin pages live under Manage.
 const TODAY_LINKS: NavItem[] = [
-  { key: "homework", href: "/homework", label: "Homework" },
   { key: "reflections", href: "/reflections", label: "Reflections" },
-  { key: "coding", href: "/coding", label: "Coding" },
-  { key: "mistakes", href: "/mistakes", label: "Mistakes" },
 ];
 const MANAGE_LINKS: NavItem[] = [
   { key: "schedule", href: "/schedule", label: "Schedule" },
   { key: "settings", href: "/settings", label: "Settings" },
   { key: "quests", href: "/quests", label: "Quests" },
   { key: "rewards", href: "/rewards", label: "Rewards" },
+  { key: "homework", href: "/homework", label: "Homework" },
+  { key: "coding", href: "/coding", label: "Coding" },
+  { key: "mistakes", href: "/mistakes", label: "Mistakes" },
 ];
 
 const HREF_BY_KEY: Record<NavKey, string> = Object.fromEntries(

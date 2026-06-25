@@ -54,3 +54,13 @@ export function previousISODate(iso: string): string {
   const t = Date.UTC(y, m - 1, d) - 24 * 60 * 60 * 1000;
   return new Date(t).toISOString().slice(0, 10);
 }
+
+/**
+ * The calendar day after an ISO date (YYYY-MM-DD), as an ISO date. Pure mirror
+ * of `previousISODate` (UTC-noon math, DST-immune). Crosses month/year bounds.
+ */
+export function nextISODate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const t = Date.UTC(y, m - 1, d) + 24 * 60 * 60 * 1000;
+  return new Date(t).toISOString().slice(0, 10);
+}

@@ -14,6 +14,7 @@ import {
   ScheduleBlockUpdateInput,
   ScheduleBlockDeleteInput,
   CompleteScheduledInput,
+  MissionSetReflectionInput,
   WeeklyGoalCreateInput,
   WeeklyGoalUpdateInput,
   WeeklyGoalDeleteInput,
@@ -54,6 +55,7 @@ import {
   scheduleBlockUpdate,
   scheduleBlockDelete,
   missionCompleteScheduled,
+  missionSetReflection,
   weeklyGoalCreate,
   weeklyGoalUpdate,
   weeklyGoalDelete,
@@ -141,6 +143,10 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
   [COMMANDS.missionCompleteScheduled]: {
     schema: CompleteScheduledInput,
     handler: missionCompleteScheduled as AnyHandler,
+  },
+  [COMMANDS.missionSetReflection]: {
+    schema: MissionSetReflectionInput,
+    handler: missionSetReflection as AnyHandler,
   },
   [COMMANDS.weeklyGoalCreate]: {
     schema: WeeklyGoalCreateInput,

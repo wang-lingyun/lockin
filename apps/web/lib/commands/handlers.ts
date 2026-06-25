@@ -13,6 +13,7 @@ import type {
   ScheduleBlockUpdateInput,
   ScheduleBlockDeleteInput,
   CompleteScheduledInput,
+  MissionSetReflectionInput,
   WeeklyGoalCreateInput,
   WeeklyGoalUpdateInput,
   WeeklyGoalDeleteInput,
@@ -401,6 +402,63 @@ export async function missionCompleteScheduled(
     .single();
   if (error) throw new Error(error.message);
   return data as Student;
+}
+
+/**
+ * Set a student's per-task reflection note. For a persisted mission we update by
+ * id; for a virtual scheduled block we first materialize the dated mission
+ * (idempotent, mirroring `missionCompleteScheduled`) then write the note.
+ */
+export async function missionSetReflection(
+  input: MissionSetReflectionInput,
+  ctx: CommandContext,
+): Promise<DailyMission> {
+  let missionId = input.missionId ?? null;
+
+  if (!missionId) {
+    const { data: block, error: blockErr } = await ctx.supabase
+      .from("schedule_blocks")
+      .select("id, student_id, task_id, subject_id, subject_track_id")
+      .eq("id", input.scheduleBlockId!)
+      .single();
+    if (blockErr) throw new Error(blockErr.message);
+    const b = block as Pick<
+      ScheduleBlock,
+      "id" | "student_id" | "task_id" | "subject_id" | "subject_track_id"
+    >;
+
+    await ctx.supabase.from("daily_missions").upsert(
+      {
+        student_id: b.student_id,
+        task_id: b.task_id,
+        subject_id: b.subject_id,
+        subject_track_id: b.subject_track_id,
+        schedule_block_id: b.id,
+        date: input.date!,
+        status: "not_started",
+      },
+      { onConflict: "student_id,date,schedule_block_id", ignoreDuplicates: true },
+    );
+
+    const { data: mission, error: missionErr } = await ctx.supabase
+      .from("daily_missions")
+      .select("id")
+      .eq("student_id", b.student_id)
+      .eq("date", input.date!)
+      .eq("schedule_block_id", b.id)
+      .single();
+    if (missionErr) throw new Error(missionErr.message);
+    missionId = (mission as { id: string }).id;
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("daily_missions")
+    .update({ student_reflection: input.reflection })
+    .eq("id", missionId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as DailyMission;
 }
 
 export async function weeklyGoalCreate(

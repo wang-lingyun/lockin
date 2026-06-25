@@ -164,6 +164,33 @@ export const CompleteScheduledInput = z.object({
 });
 export type CompleteScheduledInput = z.infer<typeof CompleteScheduledInput>;
 
+/**
+ * Set a student's reflection note on a single mission (per-task reflection).
+ * Targets either a persisted `missionId`, or a *virtual* scheduled block via
+ * (`studentId`, `scheduleBlockId`, `date`) — which the handler materializes
+ * first. `reflection` is nullable so a note can be cleared.
+ */
+export const MissionSetReflectionInput = z
+  .object({
+    missionId: uuid.optional(),
+    studentId: uuid.optional(),
+    scheduleBlockId: uuid.optional(),
+    date: isoDate.optional(),
+    reflection: z.string().trim().max(2000).nullable(),
+  })
+  .refine(
+    (d) =>
+      Boolean(d.missionId) ||
+      Boolean(d.studentId && d.scheduleBlockId && d.date),
+    {
+      message:
+        "Provide missionId, or studentId + scheduleBlockId + date for a scheduled block.",
+    },
+  );
+export type MissionSetReflectionInput = z.infer<
+  typeof MissionSetReflectionInput
+>;
+
 /** A weekly goal's lifecycle (Quest Board, PRD §10.6). */
 export const WeeklyGoalStatus = z.enum(["active", "completed", "archived"]);
 export type WeeklyGoalStatus = z.infer<typeof WeeklyGoalStatus>;

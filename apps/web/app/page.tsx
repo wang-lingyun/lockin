@@ -1,17 +1,18 @@
 import Link from "next/link";
 import { requireParent } from "@/lib/auth/session";
-import { todayISO, formatLongDate } from "@/lib/date";
+import { todayISO, formatLongDate, nextISODate } from "@/lib/date";
 import { hoursLabel } from "@/lib/format";
+import { withStudent } from "@/lib/nav/withStudent";
 import { completeMissionAction, completeScheduledAction } from "./actions";
 import { AppHeader } from "./_components/AppHeader";
-import { XpBar } from "./_components/XpBar";
+import { MissionReflection } from "./_components/MissionReflection";
 import { getTodaysMissions } from "@/lib/missions/getTodaysMissions";
 import type { Student } from "@/lib/db/types";
 
 /**
  * Today — the distraction-free "do my work" focus (Stage 8). Just the active
- * student's level and today's missions, with mark-done. Everything to plan or
- * administer lives behind Manage.
+ * student's today's missions and how much of today is done, with mark-done and a
+ * per-task reflection note. Everything to plan or administer lives behind Manage.
  */
 export default async function Today({
   searchParams,
@@ -35,11 +36,15 @@ export default async function Today({
     ? await getTodaysMissions(supabase, active.id, today)
     : [];
   const missionsDone = missions.filter((m) => m.status === "completed").length;
+  const pct = missions.length
+    ? Math.round((missionsDone / missions.length) * 100)
+    : 0;
   const totalMinutes = missions.reduce(
     (sum, m) => sum + (m.estimatedMinutes ?? 0),
     0,
   );
   const totalLabel = hoursLabel(totalMinutes);
+  const tomorrow = active ? nextISODate(today) : today;
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
@@ -78,6 +83,12 @@ export default async function Today({
                 ) : null}
               </h2>
               <p className="text-sm text-muted">{formatLongDate(today)}</p>
+              <Link
+                href={withStudent("/schedule", active.id, { week: tomorrow })}
+                className="text-xs text-muted hover:text-text"
+              >
+                Tomorrow&apos;s schedule →
+              </Link>
             </div>
             <div className="shrink-0 text-right text-sm text-muted">
               <p>
@@ -87,7 +98,19 @@ export default async function Today({
             </div>
           </div>
 
-          <XpBar xp={active.current_xp} />
+          <div>
+            <div className="mb-1 flex items-baseline justify-between">
+              <span className="text-sm font-semibold text-text">
+                {pct}% done today
+              </span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
+              <div
+                className="h-full rounded-full bg-primary transition-[width]"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
 
           <h3 className="mb-2 mt-6 text-sm font-semibold uppercase tracking-wide text-muted">
             Today&apos;s missions
@@ -103,8 +126,9 @@ export default async function Today({
                 return (
                   <li
                     key={m.key}
-                    className="flex items-center justify-between rounded-lg bg-surface-2 px-4 py-3"
+                    className="rounded-lg bg-surface-2 px-4 py-3"
                   >
+                    <div className="flex items-center justify-between">
                     <div className="flex min-w-0 items-center gap-3">
                       <span
                         className="inline-block h-8 w-1 shrink-0 rounded-full"
@@ -161,6 +185,16 @@ export default async function Today({
                         </button>
                       </form>
                     )}
+                    </div>
+                    <MissionReflection
+                      reflection={m.reflection}
+                      missionId={m.source === "mission" ? m.missionId : undefined}
+                      studentId={m.source === "block" ? active.id : undefined}
+                      scheduleBlockId={
+                        m.source === "block" ? m.scheduleBlockId : undefined
+                      }
+                      date={m.source === "block" ? today : undefined}
+                    />
                   </li>
                 );
               })}

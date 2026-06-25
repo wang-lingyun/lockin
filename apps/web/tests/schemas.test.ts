@@ -10,6 +10,7 @@ import {
   ScheduleBlockCreateInput,
   ScheduleBlockUpdateInput,
   CompleteScheduledInput,
+  MissionSetReflectionInput,
   WeeklyGoalCreateInput,
   WeeklyGoalUpdateInput,
   WeeklyGoalIncrementInput,
@@ -225,6 +226,62 @@ describe("CompleteScheduledInput", () => {
         studentId: UUID,
         scheduleBlockId: UUID,
         date: "06/14/2026",
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("MissionSetReflectionInput", () => {
+  it("accepts a persisted mission by id", () => {
+    expect(
+      MissionSetReflectionInput.safeParse({
+        missionId: UUID,
+        reflection: "Finished all the fractions.",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("accepts a scheduled block via studentId + scheduleBlockId + date", () => {
+    expect(
+      MissionSetReflectionInput.safeParse({
+        studentId: UUID,
+        scheduleBlockId: UUID,
+        date: "2026-06-14",
+        reflection: "Got stuck on recursion.",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("allows clearing the note with null", () => {
+    expect(
+      MissionSetReflectionInput.safeParse({
+        missionId: UUID,
+        reflection: null,
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects when neither identifier path is provided", () => {
+    expect(
+      MissionSetReflectionInput.safeParse({ reflection: "orphan" }).success,
+    ).toBe(false);
+  });
+
+  it("rejects an incomplete block trio", () => {
+    expect(
+      MissionSetReflectionInput.safeParse({
+        studentId: UUID,
+        scheduleBlockId: UUID,
+        reflection: "missing date",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects reflections over the max length", () => {
+    expect(
+      MissionSetReflectionInput.safeParse({
+        missionId: UUID,
+        reflection: "x".repeat(2001),
       }).success,
     ).toBe(false);
   });

@@ -265,6 +265,7 @@ export type DailyMission = {
   status: MissionStatus;
   xp_awarded: number;
   completed_at: string | null;
+  student_reflection: string | null;
 };
 
 /** A mission joined with its task + subject, as shown on the dashboard. */

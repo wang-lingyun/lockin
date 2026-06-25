@@ -103,3 +103,32 @@ export async function completeScheduledAction(formData: FormData): Promise<void>
   );
   revalidatePath("/");
 }
+
+/**
+ * Save a per-task reflection note. Targets a persisted mission by id, or a
+ * virtual scheduled block via (studentId, scheduleBlockId, date) which the
+ * handler materializes first.
+ */
+export async function setMissionReflectionAction(
+  formData: FormData,
+): Promise<void> {
+  const parent = await requireParent();
+  const missionId = String(formData.get("missionId") ?? "");
+  const scheduleBlockId = String(formData.get("scheduleBlockId") ?? "");
+  await dispatch(
+    COMMANDS.missionSetReflection,
+    {
+      missionId: missionId || undefined,
+      studentId: missionId
+        ? undefined
+        : String(formData.get("studentId") ?? "") || undefined,
+      scheduleBlockId: missionId ? undefined : scheduleBlockId || undefined,
+      date: missionId
+        ? undefined
+        : String(formData.get("date") ?? "") || todayISO(),
+      reflection: String(formData.get("reflection") ?? "").trim() || null,
+    },
+    uiCommandContext(parent),
+  );
+  revalidatePath("/");
+}
