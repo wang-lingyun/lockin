@@ -44,10 +44,48 @@ export default async function ManagePage({
     .select("id,name")
     .order("name", { ascending: true });
 
-  const { data: tasks } = await supabase
+  // Tasks for the assign form, scoped to the active student's *active* subjects
+  // & tracks (priority not "inactive"; absence => inactive, per ADR 0005 — the
+  // same rule Settings uses). A task is offered if its most-specific attribution
+  // is on for the student; an unattributed (generic) task is always offered.
+  const { data: tasksData } = await supabase
     .from("tasks")
-    .select("id,title")
+    .select("id,title,subject_id,subject_track_id")
     .order("created_at", { ascending: false });
+  type TaskRow = {
+    id: string;
+    title: string;
+    subject_id: string | null;
+    subject_track_id: string | null;
+  };
+  const allTasks = (tasksData ?? []) as TaskRow[];
+
+  let tasks: { id: string; title: string }[] = [];
+  if (active) {
+    const { data: ss } = await supabase
+      .from("student_subjects")
+      .select("subject_id")
+      .eq("student_id", active.id)
+      .neq("priority_type", "inactive");
+    const activeSubjects = new Set((ss ?? []).map((r) => r.subject_id));
+
+    const { data: st } = await supabase
+      .from("student_subject_tracks")
+      .select("subject_track_id")
+      .eq("student_id", active.id)
+      .neq("priority_type", "inactive");
+    const activeTracks = new Set((st ?? []).map((r) => r.subject_track_id));
+
+    tasks = allTasks
+      .filter((t) =>
+        t.subject_track_id
+          ? activeTracks.has(t.subject_track_id)
+          : t.subject_id
+            ? activeSubjects.has(t.subject_id)
+            : true,
+      )
+      .map((t) => ({ id: t.id, title: t.title }));
+  }
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">

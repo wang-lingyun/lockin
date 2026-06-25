@@ -27,7 +27,8 @@ export function AssignTaskForm({
   if (tasks.length === 0) {
     return (
       <p className="text-sm text-muted">
-        Create a task above, then assign it here.
+        No tasks for this student&apos;s active subjects yet. Turn subjects on in
+        Settings, or create a task above.
       </p>
     );
   }
