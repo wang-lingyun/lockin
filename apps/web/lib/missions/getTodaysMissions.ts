@@ -31,7 +31,7 @@ export async function getTodaysMissions(
   studentId: string,
   dateISO: string,
 ): Promise<TodayMission[]> {
-  // 1. Persisted missions for the day (ad-hoc + previously materialized).
+  // Persisted missions for the day (ad-hoc + previously materialized blocks).
   const { data: missionData } = await supabase
     .from("daily_missions")
     .select(
@@ -42,10 +42,26 @@ export async function getTodaysMissions(
     .order("created_at", { ascending: true });
   const missions = (missionData ?? []) as MissionWithTask[];
 
+  // Schedule blocks for the student (used both to title block-derived missions
+  // and to surface today's not-yet-acted-on occurrences).
+  const { data: blockData } = await supabase
+    .from("schedule_blocks")
+    .select("*, task:tasks(id,title), subject:subjects(id,name,color)")
+    .eq("student_id", studentId)
+    .neq("status", "cancelled");
+  const blocks = (blockData ?? []) as BlockWithJoins[];
+  const blockById = new Map(blocks.map((b) => [b.id, b]));
+
+  // 1. Persisted missions for the day. A mission materialized from a schedule
+  // block has no task, so fall back to the block's own title (keeping Today in
+  // sync with the weekly schedule) before the generic "Untitled task".
   const out: TodayMission[] = missions.map((m) => ({
     source: "mission",
     key: `m:${m.id}`,
-    title: m.task?.title ?? "Untitled task",
+    title:
+      m.task?.title ??
+      (m.schedule_block_id ? blockById.get(m.schedule_block_id)?.title : null) ??
+      "Untitled task",
     subjectName: m.subject?.name ?? null,
     subjectColor: m.subject?.color ?? null,
     estimatedMinutes: m.task?.estimated_minutes ?? null,
@@ -58,13 +74,6 @@ export async function getTodaysMissions(
   const materialized = new Set(
     missions.map((m) => m.schedule_block_id).filter(Boolean) as string[],
   );
-
-  const { data: blockData } = await supabase
-    .from("schedule_blocks")
-    .select("*, task:tasks(id,title), subject:subjects(id,name,color)")
-    .eq("student_id", studentId)
-    .neq("status", "cancelled");
-  const blocks = (blockData ?? []) as BlockWithJoins[];
 
   for (const b of blocks) {
     if (materialized.has(b.id)) continue;
