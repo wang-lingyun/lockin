@@ -10,21 +10,24 @@ import { previousISODate } from "@/lib/date";
  */
 
 /**
- * Number of consecutive qualifying days ending at `today` (pure; unit-tested).
- * Today still "in progress" shouldn't break a streak, so if today hasn't
- * qualified yet we start counting from yesterday. Future dates are ignored.
+ * Streak length as the number of consecutive qualifying days *on top of* the
+ * first one — so the day a streak starts reads 0, and each additional
+ * consecutive day adds 1 (pure; unit-tested). Today still "in progress"
+ * shouldn't break a streak, so if today hasn't qualified yet we start counting
+ * from yesterday. Future dates are ignored. Never negative.
  */
 export function streakFromQualifyingDates(
   dates: Set<string>,
   today: string,
 ): number {
   let cursor = dates.has(today) ? today : previousISODate(today);
-  let streak = 0;
+  let run = 0;
   while (dates.has(cursor)) {
-    streak += 1;
+    run += 1;
     cursor = previousISODate(cursor);
   }
-  return streak;
+  // The starting day counts as 0; only subsequent consecutive days add to it.
+  return Math.max(0, run - 1);
 }
 
 /**

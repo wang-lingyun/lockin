@@ -27,20 +27,26 @@ describe("streakFromQualifyingDates", () => {
     expect(streakFromQualifyingDates(new Set(), today)).toBe(0);
   });
 
-  it("counts a run ending today", () => {
+  it("is 0 on the day a streak starts (today only)", () => {
+    expect(streakFromQualifyingDates(new Set(["2026-06-14"]), today)).toBe(0);
+  });
+
+  it("counts days on top of the first for a run ending today", () => {
+    // 3 consecutive days → start day is 0, so 2
     const dates = new Set(["2026-06-14", "2026-06-13", "2026-06-12"]);
-    expect(streakFromQualifyingDates(dates, today)).toBe(3);
+    expect(streakFromQualifyingDates(dates, today)).toBe(2);
   });
 
   it("counts a run ending yesterday (today not done yet)", () => {
+    // 2 consecutive days → 1
     const dates = new Set(["2026-06-13", "2026-06-12"]);
-    expect(streakFromQualifyingDates(dates, today)).toBe(2);
+    expect(streakFromQualifyingDates(dates, today)).toBe(1);
   });
 
   it("breaks on a gap", () => {
-    // today + yesterday qualify, then a gap on the 12th
+    // today + yesterday qualify (2 days), then a gap on the 12th → 1
     const dates = new Set(["2026-06-14", "2026-06-13", "2026-06-11"]);
-    expect(streakFromQualifyingDates(dates, today)).toBe(2);
+    expect(streakFromQualifyingDates(dates, today)).toBe(1);
   });
 
   it("is 0 when neither today nor yesterday qualifies", () => {
