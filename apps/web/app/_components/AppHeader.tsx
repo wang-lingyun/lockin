@@ -36,7 +36,12 @@ const MANAGE_HOME: NavItem = { key: "manage", href: "/manage", label: "Manage" }
 const TODAY_LINKS: NavItem[] = [
   { key: "reflections", href: "/reflections", label: "Reflections" },
 ];
-const MANAGE_LINKS: NavItem[] = [
+
+// Every Manage-mode destination. These pages stay reachable by direct URL (so
+// mode detection, highlighting, and the student switcher's return path keep
+// working) even though, per product decision, none are currently surfaced in
+// the Manage secondary nav.
+const MANAGE_PAGES: NavItem[] = [
   { key: "schedule", href: "/schedule", label: "Schedule" },
   { key: "settings", href: "/settings", label: "Settings" },
   { key: "quests", href: "/quests", label: "Quests" },
@@ -45,15 +50,19 @@ const MANAGE_LINKS: NavItem[] = [
   { key: "mistakes", href: "/mistakes", label: "Mistakes" },
 ];
 
+// Links actually rendered in the Manage secondary nav row. Decluttered to empty
+// — the pages in MANAGE_PAGES remain reachable by URL.
+const MANAGE_LINKS: NavItem[] = [];
+
 const HREF_BY_KEY: Record<NavKey, string> = Object.fromEntries(
-  [TODAY_HOME, MANAGE_HOME, ...TODAY_LINKS, ...MANAGE_LINKS].map((i) => [
+  [TODAY_HOME, MANAGE_HOME, ...TODAY_LINKS, ...MANAGE_PAGES].map((i) => [
     i.key,
     i.href,
   ]),
 ) as Record<NavKey, string>;
 
 function modeOf(current: NavKey): "today" | "manage" {
-  if (current === "manage" || MANAGE_LINKS.some((i) => i.key === current)) {
+  if (current === "manage" || MANAGE_PAGES.some((i) => i.key === current)) {
     return "manage";
   }
   return "today";
@@ -113,6 +122,7 @@ export function AppHeader({
         basePath={basePath}
       />
 
+      {secondary.length > 0 ? (
       <nav className="flex flex-wrap gap-2">
         {secondary.map((item) => {
           const isActive = item.key === current;
@@ -131,6 +141,7 @@ export function AppHeader({
           );
         })}
       </nav>
+      ) : null}
     </header>
   );
 }
