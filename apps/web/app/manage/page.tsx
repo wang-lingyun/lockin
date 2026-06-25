@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { requireParent } from "@/lib/auth/session";
 import { todayISO } from "@/lib/date";
+import { withStudent } from "@/lib/nav/withStudent";
 import { AppHeader } from "../_components/AppHeader";
 import { GlanceStrip } from "../_components/GlanceStrip";
 import { CreateTaskForm } from "../_components/CreateTaskForm";
@@ -64,6 +66,23 @@ export default async function ManagePage({
           <GlanceStrip glances={glances} />
         </section>
       ) : null}
+
+      {/* Planning entry points */}
+      <section className="mb-8 grid grid-cols-2 gap-3">
+        {[
+          { href: "/schedule", label: "Schedule", hint: "Weekly schedule" },
+          { href: "/settings", label: "Settings", hint: "Subjects & tracks" },
+        ].map((c) => (
+          <Link
+            key={c.href}
+            href={withStudent(c.href, active?.id)}
+            className="rounded-xl border border-border bg-surface p-4 hover:border-primary"
+          >
+            <p className="font-medium text-text">{c.label}</p>
+            <p className="mt-1 text-xs text-muted">{c.hint}</p>
+          </Link>
+        ))}
+      </section>
 
       {/* Admin */}
       <section className="flex flex-col gap-6">
