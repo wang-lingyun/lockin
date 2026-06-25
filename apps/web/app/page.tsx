@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireParent } from "@/lib/auth/session";
-import { todayISO, formatLongDate, nextISODate } from "@/lib/date";
+import { todayISO, formatLongDate } from "@/lib/date";
 import { hoursLabel } from "@/lib/format";
 import { withStudent } from "@/lib/nav/withStudent";
 import {
@@ -48,7 +48,6 @@ export default async function Today({
     0,
   );
   const totalLabel = hoursLabel(totalMinutes);
-  const tomorrow = active ? nextISODate(today) : today;
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
@@ -88,10 +87,10 @@ export default async function Today({
               </h2>
               <p className="text-sm text-muted">{formatLongDate(today)}</p>
               <Link
-                href={withStudent("/schedule", active.id, { week: tomorrow })}
+                href={withStudent("/schedule", active.id)}
                 className="text-xs text-muted hover:text-text"
               >
-                Tomorrow&apos;s schedule →
+                Week schedule →
               </Link>
             </div>
             <div className="shrink-0 text-right text-sm text-muted">
