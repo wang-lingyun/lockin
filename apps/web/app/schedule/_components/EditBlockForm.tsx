@@ -141,6 +141,22 @@ export function EditBlockForm({
           />
           All day
         </label>
+        <label className="flex w-28 flex-col gap-1">
+          <span className="text-xs text-muted">Target (h)</span>
+          <input
+            name="targetHours"
+            type="number"
+            min={0.5}
+            step={0.5}
+            placeholder="—"
+            defaultValue={
+              block.estimated_minutes != null
+                ? block.estimated_minutes / 60
+                : ""
+            }
+            className={input}
+          />
+        </label>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">

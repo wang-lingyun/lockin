@@ -8,6 +8,7 @@ import {
   SetSubjectPriorityInput,
   SetTrackPriorityInput,
   ScheduleBlockCreateInput,
+  ScheduleBlockUpdateInput,
   CompleteScheduledInput,
   WeeklyGoalCreateInput,
   WeeklyGoalUpdateInput,
@@ -162,6 +163,50 @@ describe("ScheduleBlockCreateInput", () => {
         title: "Class",
         startAt: "2026-06-01",
       }).success,
+    ).toBe(false);
+  });
+
+  it("accepts an estimatedMinutes target and rejects out-of-range", () => {
+    expect(
+      ScheduleBlockCreateInput.safeParse({
+        studentId: UUID,
+        title: "Class",
+        estimatedMinutes: 90,
+      }).success,
+    ).toBe(true);
+    expect(
+      ScheduleBlockCreateInput.safeParse({
+        studentId: UUID,
+        title: "Class",
+        estimatedMinutes: 601,
+      }).success,
+    ).toBe(false);
+    expect(
+      ScheduleBlockCreateInput.safeParse({
+        studentId: UUID,
+        title: "Class",
+        estimatedMinutes: -30,
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("ScheduleBlockUpdateInput", () => {
+  it("accepts a nullable estimatedMinutes (clearing) and a value", () => {
+    expect(
+      ScheduleBlockUpdateInput.safeParse({ id: UUID, estimatedMinutes: null })
+        .success,
+    ).toBe(true);
+    expect(
+      ScheduleBlockUpdateInput.safeParse({ id: UUID, estimatedMinutes: 120 })
+        .success,
+    ).toBe(true);
+  });
+
+  it("rejects an over-range estimatedMinutes", () => {
+    expect(
+      ScheduleBlockUpdateInput.safeParse({ id: UUID, estimatedMinutes: 999 })
+        .success,
     ).toBe(false);
   });
 });

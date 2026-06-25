@@ -126,6 +126,7 @@ export const ScheduleBlockCreateInput = z.object({
   endAt: z.string().datetime({ offset: true }).optional(),
   allDay: z.boolean().optional(),
   recurrenceRule: z.string().trim().max(500).optional(),
+  estimatedMinutes: z.number().int().min(0).max(600).optional(),
   location: z.string().trim().max(160).optional(),
   notes: z.string().trim().max(2000).optional(),
 });
@@ -142,6 +143,7 @@ export const ScheduleBlockUpdateInput = z.object({
   endAt: z.string().datetime({ offset: true }).nullable().optional(),
   allDay: z.boolean().optional(),
   recurrenceRule: z.string().trim().max(500).nullable().optional(),
+  estimatedMinutes: z.number().int().min(0).max(600).nullable().optional(),
   location: z.string().trim().max(160).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
   status: z.enum(["planned", "cancelled"]).optional(),

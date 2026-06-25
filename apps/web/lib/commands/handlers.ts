@@ -297,6 +297,7 @@ export async function scheduleBlockCreate(
       end_at: input.endAt ?? null,
       all_day: input.allDay ?? false,
       recurrence_rule: input.recurrenceRule ?? null,
+      estimated_minutes: input.estimatedMinutes ?? null,
       location: input.location ?? null,
       notes: input.notes ?? null,
     })
@@ -322,6 +323,7 @@ export async function scheduleBlockUpdate(
     endAt: "end_at",
     allDay: "all_day",
     recurrenceRule: "recurrence_rule",
+    estimatedMinutes: "estimated_minutes",
     location: "location",
     notes: "notes",
     status: "status",

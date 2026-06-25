@@ -15,6 +15,7 @@ export type TodayMission = {
   subjectName: string | null;
   subjectColor: string | null;
   xp: number;
+  estimatedMinutes: number | null;
   status: MissionStatus;
   missionId?: string;
   scheduleBlockId?: string;
@@ -33,7 +34,9 @@ export async function getTodaysMissions(
   // 1. Persisted missions for the day (ad-hoc + previously materialized).
   const { data: missionData } = await supabase
     .from("daily_missions")
-    .select("*, task:tasks(id,title,xp_value), subject:subjects(id,name,color)")
+    .select(
+      "*, task:tasks(id,title,xp_value,estimated_minutes), subject:subjects(id,name,color)",
+    )
     .eq("student_id", studentId)
     .eq("date", dateISO)
     .order("created_at", { ascending: true });
@@ -46,6 +49,7 @@ export async function getTodaysMissions(
     subjectName: m.subject?.name ?? null,
     subjectColor: m.subject?.color ?? null,
     xp: m.task?.xp_value ?? 0,
+    estimatedMinutes: m.task?.estimated_minutes ?? null,
     status: m.status,
     missionId: m.id,
   }));
@@ -72,6 +76,7 @@ export async function getTodaysMissions(
       subjectName: b.subject?.name ?? null,
       subjectColor: b.subject?.color ?? null,
       xp: b.task?.xp_value ?? 0,
+      estimatedMinutes: b.estimated_minutes ?? null,
       status: "not_started",
       scheduleBlockId: b.id,
     });

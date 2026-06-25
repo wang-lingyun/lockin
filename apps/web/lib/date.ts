@@ -22,6 +22,22 @@ export function todayISO(): string {
   }).format(new Date());
 }
 
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+/**
+ * Format an ISO calendar date (YYYY-MM-DD) as a friendly long date, e.g.
+ * "2026-06-22" → "June 22, 2026". Pure: splits the ISO string (no `Date`), so
+ * it never drifts across timezones — matches `previousISODate`'s style.
+ */
+export function formatLongDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const month = MONTH_NAMES[m - 1] ?? "";
+  return `${month} ${d}, ${y}`;
+}
+
 /**
  * The calendar day before an ISO date (YYYY-MM-DD), as an ISO date. Pure: parses
  * the date at UTC noon and subtracts a day, so it's immune to DST and only walks

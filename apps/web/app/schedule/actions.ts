@@ -36,6 +36,7 @@ export async function createBlockAction(
     | "daily"
     | "weekly";
   const byweekday = formData.getAll("byweekday").map(String);
+  const hoursRaw = String(formData.get("targetHours") ?? "").trim();
 
   const result = await dispatch(
     COMMANDS.scheduleBlockCreate,
@@ -51,6 +52,8 @@ export async function createBlockAction(
         : toUtcISO(date, startTime),
       endAt: allDay ? undefined : toUtcISO(date, endTime),
       recurrenceRule: buildRRule(repeat, byweekday) ?? undefined,
+      estimatedMinutes:
+        hoursRaw === "" ? undefined : Math.round(Number(hoursRaw) * 60),
     },
     uiCommandContext(parent),
   );
@@ -74,6 +77,7 @@ export async function updateBlockAction(
     | "daily"
     | "weekly";
   const byweekday = formData.getAll("byweekday").map(String);
+  const hoursRaw = String(formData.get("targetHours") ?? "").trim();
 
   // Editing allows clearing optional fields, so empty values map to null
   // (not undefined) — the update handler only patches keys that are present.
@@ -89,6 +93,8 @@ export async function updateBlockAction(
       startAt: allDay ? toUtcISO(date, "") : toUtcISO(date, startTime),
       endAt: !allDay && endTime ? toUtcISO(date, endTime) : null,
       recurrenceRule: buildRRule(repeat, byweekday),
+      estimatedMinutes:
+        hoursRaw === "" ? null : Math.round(Number(hoursRaw) * 60),
     },
     uiCommandContext(parent),
   );

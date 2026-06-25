@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireParent } from "@/lib/auth/session";
-import { todayISO } from "@/lib/date";
+import { todayISO, formatLongDate } from "@/lib/date";
+import { hoursLabel } from "@/lib/format";
 import { completeMissionAction, completeScheduledAction } from "./actions";
 import { AppHeader } from "./_components/AppHeader";
 import { XpBar } from "./_components/XpBar";
@@ -34,6 +35,11 @@ export default async function Today({
     ? await getTodaysMissions(supabase, active.id, today)
     : [];
   const missionsDone = missions.filter((m) => m.status === "completed").length;
+  const totalMinutes = missions.reduce(
+    (sum, m) => sum + (m.estimatedMinutes ?? 0),
+    0,
+  );
+  const totalLabel = hoursLabel(totalMinutes);
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-10">
@@ -61,18 +67,24 @@ export default async function Today({
         </section>
       ) : active ? (
         <section className="rounded-xl border border-border bg-surface p-6">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-text">
-              {active.name}
-              {active.grade ? (
-                <span className="ml-2 text-sm font-normal text-muted">
-                  Grade {active.grade}
-                </span>
-              ) : null}
-            </h2>
-            <span className="shrink-0 text-sm text-muted">
-              ✅ {missionsDone}/{missions.length} today
-            </span>
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold text-text">
+                {active.name}
+                {active.grade ? (
+                  <span className="ml-2 text-sm font-normal text-muted">
+                    Grade {active.grade}
+                  </span>
+                ) : null}
+              </h2>
+              <p className="text-sm text-muted">{formatLongDate(today)}</p>
+            </div>
+            <div className="shrink-0 text-right text-sm text-muted">
+              <p>
+                ✅ {missionsDone}/{missions.length} today
+              </p>
+              {totalLabel ? <p>~{totalLabel} planned</p> : null}
+            </div>
           </div>
 
           <XpBar xp={active.current_xp} />
@@ -112,7 +124,11 @@ export default async function Today({
                           ) : null}
                         </p>
                         <p className="text-xs text-muted">
-                          {m.subjectName ?? "No subject"} · +{m.xp} XP
+                          {m.subjectName ?? "No subject"}
+                          {hoursLabel(m.estimatedMinutes)
+                            ? ` · ${hoursLabel(m.estimatedMinutes)}`
+                            : ""}{" "}
+                          · +{m.xp} XP
                         </p>
                       </div>
                     </div>

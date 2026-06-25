@@ -79,6 +79,7 @@ export type ScheduleBlock = {
   end_at: string | null;
   all_day: boolean;
   recurrence_rule: string | null;
+  estimated_minutes: number | null;
   location: string | null;
   notes: string | null;
   status: ScheduleBlockStatus;
@@ -268,6 +269,6 @@ export type DailyMission = {
 
 /** A mission joined with its task + subject, as shown on the dashboard. */
 export type MissionWithTask = DailyMission & {
-  task: Pick<Task, "id" | "title" | "xp_value"> | null;
+  task: Pick<Task, "id" | "title" | "xp_value" | "estimated_minutes"> | null;
   subject: Pick<Subject, "id" | "name" | "color"> | null;
 };

@@ -39,12 +39,15 @@ export async function createTaskAction(
 ): Promise<ActionState> {
   const parent = await requireParent();
   const xpRaw = String(formData.get("xpValue") ?? "").trim();
+  const hoursRaw = String(formData.get("targetHours") ?? "").trim();
   const result = await dispatch(
     COMMANDS.taskCreate,
     {
       title: String(formData.get("title") ?? ""),
       subjectId: String(formData.get("subjectId") ?? "") || undefined,
       xpValue: xpRaw === "" ? undefined : Number(xpRaw),
+      estimatedMinutes:
+        hoursRaw === "" ? undefined : Math.round(Number(hoursRaw) * 60),
     },
     uiCommandContext(parent),
   );

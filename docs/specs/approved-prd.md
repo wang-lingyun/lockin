@@ -300,7 +300,7 @@ specific dates and times (e.g. Geometry Mon 9:00, AoPS Mon 10:30, Calculus Tue 9
 
 - A **ScheduleBlock** represents a planned study session: student, subject, optional
   track, optional linked task, title, start/end datetime (or all-day), optional
-  recurrence rule, location/notes, status.
+  recurrence rule, optional target finish time (estimated minutes), location/notes, status.
 - **Today's Missions are derived on demand** from the schedule blocks that fall on the
   current date — no cron job. Recurrence is expanded at read time. Completing a
   scheduled block can create/complete the corresponding DailyMission and award XP.
@@ -375,7 +375,7 @@ Core tables/objects (field lists below are authoritative for the MVP schema):
 19. **SubjectRubric** — id, subject_id, rubric_name, criteria, grade_level, description, created_at, updated_at
 20. **SubjectTrack** — id, subject_id, name, description, icon, color, sort_order, is_default, is_active, created_at, updated_at
 21. **StudentSubjectTrack** — id, student_id, subject_track_id, priority_type (primary/bonus/inactive), created_at, updated_at
-22. **ScheduleBlock** — id, student_id, subject_id, subject_track_id (nullable), task_id (nullable), title, start_at, end_at, all_day, recurrence_rule (nullable), location, notes, status, created_at, updated_at
+22. **ScheduleBlock** — id, student_id, subject_id, subject_track_id (nullable), task_id (nullable), title, start_at, end_at, all_day, recurrence_rule (nullable), estimated_minutes (nullable), location, notes, status, created_at, updated_at
 23. **AdminCommandLog** — id, actor_type (parent_ui/agent), actor_id, channel (ui/slack/voice/api), command_name, input_payload, result_status, result_summary, created_at
 
 > **Track attribution:** `Task`, `TaskAssignment`, `DailyMission`, `WeeklyGoal`,

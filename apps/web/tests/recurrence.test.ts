@@ -23,6 +23,7 @@ function block(over: Partial<ScheduleBlock>): ScheduleBlock {
     end_at: null,
     all_day: false,
     recurrence_rule: null,
+    estimated_minutes: null,
     location: null,
     notes: null,
     status: "planned",

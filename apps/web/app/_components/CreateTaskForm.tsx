@@ -47,6 +47,17 @@ export function CreateTaskForm({ subjects }: { subjects: SubjectOption[] }) {
           className={input}
         />
       </label>
+      <label className="flex w-28 flex-col gap-1">
+        <span className="text-xs text-muted">Target (h)</span>
+        <input
+          name="targetHours"
+          type="number"
+          min={0.5}
+          step={0.5}
+          placeholder="—"
+          className={input}
+        />
+      </label>
       <button
         type="submit"
         disabled={pending}
