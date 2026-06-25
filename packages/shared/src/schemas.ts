@@ -28,6 +28,21 @@ export const TaskCreateInput = z.object({
 });
 export type TaskCreateInput = z.infer<typeof TaskCreateInput>;
 
+/** Edit a parent-owned task. All editable fields optional (partial update). */
+export const TaskUpdateInput = z.object({
+  id: uuid,
+  title: trimmed(160).optional(),
+  description: z.string().trim().max(2000).optional(),
+  subjectId: uuid.optional(),
+  subjectTrackId: uuid.optional(),
+  estimatedMinutes: z.number().int().min(0).max(600).optional(),
+});
+export type TaskUpdateInput = z.infer<typeof TaskUpdateInput>;
+
+/** Delete a parent-owned task (RLS gates ownership via `created_by`). */
+export const TaskDeleteInput = z.object({ id: uuid });
+export type TaskDeleteInput = z.infer<typeof TaskDeleteInput>;
+
 /**
  * Assign a task to a student on a date. In Stage 1 this directly materializes a
  * daily mission (calendar / schedule blocks arrive in Stage 3).

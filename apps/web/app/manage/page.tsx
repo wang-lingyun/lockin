@@ -6,6 +6,7 @@ import { AppHeader } from "../_components/AppHeader";
 import { GlanceStrip } from "../_components/GlanceStrip";
 import { CreateTaskForm } from "../_components/CreateTaskForm";
 import { AssignTaskForm } from "../_components/AssignTaskForm";
+import { TaskList } from "../_components/TaskList";
 import { studentGlance } from "@/lib/dashboard/glance";
 import type { Student } from "@/lib/db/types";
 
@@ -96,6 +97,19 @@ export default async function ManagePage({
       .map((t) => ({ id: t.id, title: t.title }));
   }
 
+  // Full task list for the "Tasks" panel (rename/delete), labelled by track or
+  // subject name. Built from the already-fetched subjects/tracks (track wins).
+  const subjectName = new Map((subjects ?? []).map((s) => [s.id, s.name]));
+  const trackName = new Map((tracks ?? []).map((t) => [t.id, t.name]));
+  const manageTasks = allTasks.map((t) => ({
+    id: t.id,
+    title: t.title,
+    label:
+      (t.subject_track_id ? trackName.get(t.subject_track_id) : null) ??
+      (t.subject_id ? subjectName.get(t.subject_id) : null) ??
+      null,
+  }));
+
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
       <AppHeader
@@ -133,6 +147,9 @@ export default async function ManagePage({
 
       {/* Admin */}
       <section className="flex flex-col gap-6">
+        <Panel title="Tasks">
+          <TaskList tasks={manageTasks} />
+        </Panel>
         <Panel title="Assign a task to today">
           {active ? (
             <AssignTaskForm

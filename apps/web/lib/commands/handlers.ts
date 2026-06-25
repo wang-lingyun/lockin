@@ -1,6 +1,8 @@
 import type {
   StudentCreateInput,
   TaskCreateInput,
+  TaskUpdateInput,
+  TaskDeleteInput,
   TaskAssignInput,
   MissionCompleteInput,
   MissionUncompleteInput,
@@ -90,6 +92,50 @@ export async function taskCreate(
     .single();
   if (error) throw new Error(error.message);
   return data as Task;
+}
+
+/**
+ * Edit a parent-owned task. RLS ("tasks: owner all", `created_by = auth.uid()`)
+ * matches no row for other parents' tasks, so this only edits the caller's own.
+ */
+export async function taskUpdate(
+  input: TaskUpdateInput,
+  ctx: CommandContext,
+): Promise<Task> {
+  const { id, ...rest } = input;
+  const patch: Record<string, unknown> = {};
+  const map: Record<string, string> = {
+    title: "title",
+    description: "description",
+    subjectId: "subject_id",
+    subjectTrackId: "subject_track_id",
+    estimatedMinutes: "estimated_minutes",
+  };
+  for (const [k, v] of Object.entries(rest)) {
+    if (v !== undefined) patch[map[k]] = v;
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("tasks")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Task;
+}
+
+/** Delete a parent-owned task (RLS gates ownership via `created_by`). */
+export async function taskDelete(
+  input: TaskDeleteInput,
+  ctx: CommandContext,
+): Promise<{ id: string }> {
+  const { error } = await ctx.supabase
+    .from("tasks")
+    .delete()
+    .eq("id", input.id);
+  if (error) throw new Error(error.message);
+  return { id: input.id };
 }
 
 export async function taskAssign(

@@ -6,6 +6,8 @@
 export const COMMANDS = {
   studentCreate: "student.create",
   taskCreate: "task.create",
+  taskUpdate: "task.update",
+  taskDelete: "task.delete",
   taskAssign: "task.assign",
   missionComplete: "mission.complete",
   subjectCreate: "subject.create",

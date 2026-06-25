@@ -5,6 +5,8 @@ import {
   TaskAssignInput,
   MissionCompleteInput,
   MissionUncompleteInput,
+  TaskUpdateInput,
+  TaskDeleteInput,
   TrackCreateInput,
   SubjectDeleteInput,
   TrackDeleteInput,
@@ -51,6 +53,34 @@ describe("TaskCreateInput", () => {
     expect(
       TaskCreateInput.safeParse({ title: "x", subjectTrackId: "nope" }).success,
     ).toBe(false);
+  });
+});
+
+describe("TaskUpdateInput", () => {
+  it("accepts just an id (no-op patch)", () => {
+    expect(TaskUpdateInput.safeParse({ id: UUID }).success).toBe(true);
+  });
+
+  it("accepts and trims a title", () => {
+    const r = TaskUpdateInput.parse({ id: UUID, title: "  Renamed  " });
+    expect(r.title).toBe("Renamed");
+  });
+
+  it("rejects a non-uuid id", () => {
+    expect(TaskUpdateInput.safeParse({ id: "nope", title: "x" }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe("TaskDeleteInput", () => {
+  it("accepts a uuid id", () => {
+    expect(TaskDeleteInput.safeParse({ id: UUID }).success).toBe(true);
+  });
+
+  it("rejects a non-uuid or missing id", () => {
+    expect(TaskDeleteInput.safeParse({ id: "nope" }).success).toBe(false);
+    expect(TaskDeleteInput.safeParse({}).success).toBe(false);
   });
 });
 

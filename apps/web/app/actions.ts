@@ -56,6 +56,43 @@ export async function createTaskAction(
   return null;
 }
 
+/** Rename a parent-owned task (RLS gates ownership via `created_by`). */
+export async function updateTaskAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parent = await requireParent();
+  const result = await dispatch(
+    COMMANDS.taskUpdate,
+    {
+      id: String(formData.get("id") ?? ""),
+      title: String(formData.get("title") ?? ""),
+    },
+    uiCommandContext(parent),
+  );
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/");
+  revalidatePath("/manage");
+  return null;
+}
+
+/** Delete a parent-owned task. Missions keep their history (FK set null). */
+export async function deleteTaskAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parent = await requireParent();
+  const result = await dispatch(
+    COMMANDS.taskDelete,
+    { id: String(formData.get("id") ?? "") },
+    uiCommandContext(parent),
+  );
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/");
+  revalidatePath("/manage");
+  return null;
+}
+
 export async function assignTaskAction(
   _prev: ActionState,
   formData: FormData,

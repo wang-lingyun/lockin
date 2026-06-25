@@ -2,6 +2,8 @@ import {
   COMMANDS,
   StudentCreateInput,
   TaskCreateInput,
+  TaskUpdateInput,
+  TaskDeleteInput,
   TaskAssignInput,
   MissionCompleteInput,
   MissionUncompleteInput,
@@ -42,6 +44,8 @@ import type { CommandDefinition } from "./types";
 import {
   studentCreate,
   taskCreate,
+  taskUpdate,
+  taskDelete,
   taskAssign,
   missionComplete,
   missionUncomplete,
@@ -93,6 +97,14 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
   [COMMANDS.taskCreate]: {
     schema: TaskCreateInput,
     handler: taskCreate as AnyHandler,
+  },
+  [COMMANDS.taskUpdate]: {
+    schema: TaskUpdateInput,
+    handler: taskUpdate as AnyHandler,
+  },
+  [COMMANDS.taskDelete]: {
+    schema: TaskDeleteInput,
+    handler: taskDelete as AnyHandler,
   },
   [COMMANDS.taskAssign]: {
     schema: TaskAssignInput,
