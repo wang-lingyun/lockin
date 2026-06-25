@@ -37,16 +37,6 @@ export function CreateTaskForm({ subjects }: { subjects: SubjectOption[] }) {
           ))}
         </select>
       </label>
-      <label className="flex w-24 flex-col gap-1">
-        <span className="text-xs text-muted">XP</span>
-        <input
-          name="xpValue"
-          type="number"
-          min={0}
-          defaultValue={10}
-          className={input}
-        />
-      </label>
       <label className="flex w-28 flex-col gap-1">
         <span className="text-xs text-muted">Target (h)</span>
         <input

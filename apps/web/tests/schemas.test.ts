@@ -4,6 +4,7 @@ import {
   TaskCreateInput,
   TaskAssignInput,
   MissionCompleteInput,
+  MissionUncompleteInput,
   TrackCreateInput,
   SetSubjectPriorityInput,
   SetTrackPriorityInput,
@@ -30,15 +31,9 @@ describe("StudentCreateInput", () => {
 });
 
 describe("TaskCreateInput", () => {
-  it("defaults xpValue to 10", () => {
-    const r = TaskCreateInput.parse({ title: "Read a chapter" });
-    expect(r.xpValue).toBe(10);
-  });
-
-  it("rejects a negative xpValue", () => {
-    expect(
-      TaskCreateInput.safeParse({ title: "x", xpValue: -5 }).success,
-    ).toBe(false);
+  it("accepts a title and trims it", () => {
+    const r = TaskCreateInput.parse({ title: "  Read a chapter  " });
+    expect(r.title).toBe("Read a chapter");
   });
 
   it("rejects a non-uuid subjectId", () => {
@@ -75,6 +70,18 @@ describe("MissionCompleteInput", () => {
       false,
     );
     expect(MissionCompleteInput.safeParse({ missionId: UUID }).success).toBe(
+      true,
+    );
+  });
+});
+
+describe("MissionUncompleteInput", () => {
+  it("requires a uuid missionId", () => {
+    expect(MissionUncompleteInput.safeParse({ missionId: "x" }).success).toBe(
+      false,
+    );
+    expect(MissionUncompleteInput.safeParse({}).success).toBe(false);
+    expect(MissionUncompleteInput.safeParse({ missionId: UUID }).success).toBe(
       true,
     );
   });

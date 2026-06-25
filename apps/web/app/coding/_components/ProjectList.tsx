@@ -128,11 +128,6 @@ export function ProjectList({ projects }: { projects: CodingProjectRow[] }) {
                           ) : null}
                         </div>
                       </div>
-                      {f.xp_awarded > 0 ? (
-                        <span className="shrink-0 text-xs text-success">
-                          +{f.xp_awarded} XP
-                        </span>
-                      ) : null}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       {FEATURE_STATUSES.map((s) => (
@@ -140,9 +135,7 @@ export function ProjectList({ projects }: { projects: CodingProjectRow[] }) {
                           <input type="hidden" name="id" value={f.id} />
                           <input type="hidden" name="status" value={s.value} />
                           <button disabled={s.value === f.status} className={btn}>
-                            {s.value === "completed" && f.xp_awarded === 0
-                              ? `${s.label} (+20 XP)`
-                              : s.label}
+                            {s.label}
                           </button>
                         </form>
                       ))}

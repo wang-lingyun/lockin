@@ -4,7 +4,7 @@ import type { StudentGlance } from "@/lib/dashboard/glance";
 
 /**
  * All students at a glance (PRD §10.1): one compact card per student with
- * level, today's completion, streak, and attention counts. Lives on the Manage
+ * today's completion, streak, and attention counts. Lives on the Manage
  * overview; each card links to that student's Today screen.
  */
 export function GlanceStrip({ glances }: { glances: StudentGlance[] }) {
@@ -18,13 +18,12 @@ export function GlanceStrip({ glances }: { glances: StudentGlance[] }) {
         >
           <div className="flex items-center justify-between">
             <span className="font-semibold text-text">{g.student.name}</span>
-            <span className="text-xs text-muted">Level {g.level}</span>
+            <span className="text-xs text-muted">🔥 {g.streak}d</span>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
             <span>
               ✅ {g.missionsDone}/{g.missionsTotal} today
             </span>
-            <span>🔥 {g.streak}d</span>
             {g.toReview > 0 ? (
               <span className="text-accent">📥 {g.toReview}</span>
             ) : null}

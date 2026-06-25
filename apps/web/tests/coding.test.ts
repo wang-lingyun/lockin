@@ -4,7 +4,6 @@ import {
   CodingProjectUpdateInput,
   CodingFeatureCreateInput,
   CodingFeatureSetStatusInput,
-  CODING_FEATURE_XP,
 } from "@lockin/shared";
 
 const STUDENT = "11111111-1111-1111-1111-111111111111";
@@ -88,11 +87,5 @@ describe("CodingFeatureSetStatusInput", () => {
       CodingFeatureSetStatusInput.safeParse({ id: FEATURE, status: "shipped" })
         .success,
     ).toBe(false);
-  });
-});
-
-describe("CODING_FEATURE_XP", () => {
-  it("is 20 (PRD §10.12)", () => {
-    expect(CODING_FEATURE_XP).toBe(20);
   });
 });

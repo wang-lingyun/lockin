@@ -3,6 +3,7 @@ import type {
   TaskCreateInput,
   TaskAssignInput,
   MissionCompleteInput,
+  MissionUncompleteInput,
   SubjectCreateInput,
   SubjectUpdateInput,
   TrackCreateInput,
@@ -32,10 +33,6 @@ import type {
   CodingFeatureUpdateInput,
   CodingFeatureDeleteInput,
   CodingFeatureSetStatusInput,
-  RewardCreateInput,
-  RewardUpdateInput,
-  RewardDeleteInput,
-  XpAdjustInput,
 } from "@lockin/shared";
 import { homeworkSourceType } from "@lockin/shared";
 import type {
@@ -53,7 +50,6 @@ import type {
   Reflection,
   CodingProject,
   CodingFeature,
-  Reward,
 } from "@/lib/db/types";
 import type { CommandContext } from "./types";
 
@@ -84,7 +80,6 @@ export async function taskCreate(
       title: input.title,
       description: input.description ?? null,
       subject_id: input.subjectId ?? null,
-      xp_value: input.xpValue,
       estimated_minutes: input.estimatedMinutes ?? null,
       created_by: ctx.parentUserId,
     })
@@ -136,6 +131,18 @@ export async function missionComplete(
 ): Promise<Student> {
   const { data, error } = await ctx.supabase
     .rpc("complete_mission", { p_mission_id: input.missionId })
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Student;
+}
+
+/** Undo an accidental completion (RPC `uncomplete_mission`; idempotent). */
+export async function missionUncomplete(
+  input: MissionUncompleteInput,
+  ctx: CommandContext,
+): Promise<Student> {
+  const { data, error } = await ctx.supabase
+    .rpc("uncomplete_mission", { p_mission_id: input.missionId })
     .single();
   if (error) throw new Error(error.message);
   return data as Student;
@@ -870,82 +877,6 @@ export async function codingFeatureSetStatus(
     .rpc("set_coding_feature_status", {
       p_feature_id: input.id,
       p_status: input.status,
-    })
-    .single();
-  if (error) throw new Error(error.message);
-  return data as Student;
-}
-
-/** Create a reward (PRD §10.12). RLS enforces ownership on insert. */
-export async function rewardCreate(
-  input: RewardCreateInput,
-  ctx: CommandContext,
-): Promise<Reward> {
-  const { data, error } = await ctx.supabase
-    .from("rewards")
-    .insert({
-      student_id: input.studentId,
-      title: input.title,
-      description: input.description ?? null,
-      required_xp: input.requiredXp ?? null,
-    })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data as Reward;
-}
-
-export async function rewardUpdate(
-  input: RewardUpdateInput,
-  ctx: CommandContext,
-): Promise<Reward> {
-  const { id, ...rest } = input;
-  const patch: Record<string, unknown> = {};
-  const map: Record<string, string> = {
-    title: "title",
-    description: "description",
-    requiredXp: "required_xp",
-  };
-  for (const [k, v] of Object.entries(rest)) {
-    if (v !== undefined) patch[map[k]] = v;
-  }
-
-  const { data, error } = await ctx.supabase
-    .from("rewards")
-    .update(patch)
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data as Reward;
-}
-
-export async function rewardDelete(
-  input: RewardDeleteInput,
-  ctx: CommandContext,
-): Promise<{ id: string }> {
-  const { error } = await ctx.supabase
-    .from("rewards")
-    .delete()
-    .eq("id", input.id);
-  if (error) throw new Error(error.message);
-  return { id: input.id };
-}
-
-/**
- * Manual parent XP adjustment via the `adjust_student_xp` RPC (writes the ledger
- * with source_type 'manual', clamps current_xp at 0). The reason is captured in
- * `admin_command_log` by `dispatch()`.
- */
-export async function xpAdjust(
-  input: XpAdjustInput,
-  ctx: CommandContext,
-): Promise<Student> {
-  const { data, error } = await ctx.supabase
-    .rpc("adjust_student_xp", {
-      p_student_id: input.studentId,
-      p_delta: input.amount,
-      p_reason: input.reason ?? null,
     })
     .single();
   if (error) throw new Error(error.message);

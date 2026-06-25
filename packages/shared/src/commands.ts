@@ -18,6 +18,7 @@ export const COMMANDS = {
   scheduleBlockUpdate: "schedule.block.update",
   scheduleBlockDelete: "schedule.block.delete",
   missionCompleteScheduled: "mission.completeScheduled",
+  missionUncomplete: "mission.uncomplete",
   missionSetReflection: "mission.setReflection",
   weeklyGoalCreate: "weeklyGoal.create",
   weeklyGoalUpdate: "weeklyGoal.update",
@@ -37,10 +38,6 @@ export const COMMANDS = {
   codingFeatureUpdate: "coding.feature.update",
   codingFeatureDelete: "coding.feature.delete",
   codingFeatureSetStatus: "coding.feature.setStatus",
-  rewardCreate: "reward.create",
-  rewardUpdate: "reward.update",
-  rewardDelete: "reward.delete",
-  xpAdjust: "xp.adjust",
 } as const;
 
 export type CommandName = (typeof COMMANDS)[keyof typeof COMMANDS];

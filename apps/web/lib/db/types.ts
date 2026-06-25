@@ -8,8 +8,8 @@ export type Student = {
   name: string;
   grade: string | null;
   avatar: string | null;
-  current_xp: number;
-  current_level: number;
+  // XP/Levels were removed (ADR 0010); current_xp/current_level remain as dormant
+  // DB columns but are no longer read. Streak is the sole motivation metric.
   current_streak: number;
   created_at: string;
   updated_at: string;
@@ -60,7 +60,6 @@ export type Task = {
   description: string | null;
   subject_id: string | null;
   subject_track_id: string | null;
-  xp_value: number;
   estimated_minutes: number | null;
   created_by: string | null;
   created_at: string;
@@ -229,7 +228,6 @@ export type CodingFeature = {
   title: string;
   description: string | null;
   status: CodingFeatureStatus;
-  xp_awarded: number;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -240,17 +238,8 @@ export type CodingProjectRow = CodingProject & {
   features: CodingFeature[];
 };
 
-export type Reward = {
-  id: string;
-  student_id: string;
-  title: string;
-  description: string | null;
-  required_xp: number | null;
-  unlocked: boolean;
-  unlocked_at: string | null;
-  created_at: string;
-  updated_at: string;
-};
+// The Reward type was removed with the XP/Levels system (ADR 0010). The `rewards`
+// table is left dormant in the DB but is no longer surfaced anywhere in the app.
 
 export type MissionStatus = "not_started" | "in_progress" | "completed";
 
@@ -263,13 +252,12 @@ export type DailyMission = {
   schedule_block_id: string | null;
   date: string;
   status: MissionStatus;
-  xp_awarded: number;
   completed_at: string | null;
   student_reflection: string | null;
 };
 
 /** A mission joined with its task + subject, as shown on the dashboard. */
 export type MissionWithTask = DailyMission & {
-  task: Pick<Task, "id" | "title" | "xp_value" | "estimated_minutes"> | null;
+  task: Pick<Task, "id" | "title" | "estimated_minutes"> | null;
   subject: Pick<Subject, "id" | "name" | "color"> | null;
 };

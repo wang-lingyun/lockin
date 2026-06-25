@@ -42,7 +42,7 @@ export default async function CodingPage({
         <div>
           <h1 className="text-2xl font-bold text-text">Coding Projects</h1>
           <p className="text-sm text-muted">
-            Track projects and their features. Finishing a feature earns +20 XP.
+            Track projects and their features, and check them off as you finish.
           </p>
         </div>
         <Link

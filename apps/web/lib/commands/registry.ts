@@ -4,6 +4,7 @@ import {
   TaskCreateInput,
   TaskAssignInput,
   MissionCompleteInput,
+  MissionUncompleteInput,
   SubjectCreateInput,
   SubjectUpdateInput,
   TrackCreateInput,
@@ -33,10 +34,6 @@ import {
   CodingFeatureUpdateInput,
   CodingFeatureDeleteInput,
   CodingFeatureSetStatusInput,
-  RewardCreateInput,
-  RewardUpdateInput,
-  RewardDeleteInput,
-  XpAdjustInput,
   type CommandName,
 } from "@lockin/shared";
 import type { CommandDefinition } from "./types";
@@ -45,6 +42,7 @@ import {
   taskCreate,
   taskAssign,
   missionComplete,
+  missionUncomplete,
   subjectCreate,
   subjectUpdate,
   trackCreate,
@@ -74,10 +72,6 @@ import {
   codingFeatureUpdate,
   codingFeatureDelete,
   codingFeatureSetStatus,
-  rewardCreate,
-  rewardUpdate,
-  rewardDelete,
-  xpAdjust,
 } from "./handlers";
 
 type AnyHandler = CommandDefinition<unknown, unknown>["handler"];
@@ -103,6 +97,10 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
   [COMMANDS.missionComplete]: {
     schema: MissionCompleteInput,
     handler: missionComplete as AnyHandler,
+  },
+  [COMMANDS.missionUncomplete]: {
+    schema: MissionUncompleteInput,
+    handler: missionUncomplete as AnyHandler,
   },
   [COMMANDS.subjectCreate]: {
     schema: SubjectCreateInput,
@@ -219,21 +217,5 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
   [COMMANDS.codingFeatureSetStatus]: {
     schema: CodingFeatureSetStatusInput,
     handler: codingFeatureSetStatus as AnyHandler,
-  },
-  [COMMANDS.rewardCreate]: {
-    schema: RewardCreateInput,
-    handler: rewardCreate as AnyHandler,
-  },
-  [COMMANDS.rewardUpdate]: {
-    schema: RewardUpdateInput,
-    handler: rewardUpdate as AnyHandler,
-  },
-  [COMMANDS.rewardDelete]: {
-    schema: RewardDeleteInput,
-    handler: rewardDelete as AnyHandler,
-  },
-  [COMMANDS.xpAdjust]: {
-    schema: XpAdjustInput,
-    handler: xpAdjust as AnyHandler,
   },
 };

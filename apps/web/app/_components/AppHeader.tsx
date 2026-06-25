@@ -24,8 +24,7 @@ type NavKey =
   | "manage"
   | "schedule"
   | "settings"
-  | "quests"
-  | "rewards";
+  | "quests";
 
 type NavItem = { key: NavKey; href: string; label: string };
 
@@ -41,7 +40,6 @@ const MANAGE_LINKS: NavItem[] = [
   { key: "schedule", href: "/schedule", label: "Schedule" },
   { key: "settings", href: "/settings", label: "Settings" },
   { key: "quests", href: "/quests", label: "Quests" },
-  { key: "rewards", href: "/rewards", label: "Rewards" },
   { key: "homework", href: "/homework", label: "Homework" },
   { key: "coding", href: "/coding", label: "Coding" },
   { key: "mistakes", href: "/mistakes", label: "Mistakes" },

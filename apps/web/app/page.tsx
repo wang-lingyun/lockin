@@ -3,7 +3,11 @@ import { requireParent } from "@/lib/auth/session";
 import { todayISO, formatLongDate, nextISODate } from "@/lib/date";
 import { hoursLabel } from "@/lib/format";
 import { withStudent } from "@/lib/nav/withStudent";
-import { completeMissionAction, completeScheduledAction } from "./actions";
+import {
+  completeMissionAction,
+  completeScheduledAction,
+  uncompleteMissionAction,
+} from "./actions";
 import { AppHeader } from "./_components/AppHeader";
 import { MissionReflection } from "./_components/MissionReflection";
 import { getTodaysMissions } from "@/lib/missions/getTodaysMissions";
@@ -61,7 +65,7 @@ export default async function Today({
             No students yet
           </h2>
           <p className="mb-4 text-sm text-muted">
-            Add a child profile in Manage to start planning and tracking XP.
+            Add a child profile in Manage to start planning daily missions.
           </p>
           <Link
             href="/manage"
@@ -151,15 +155,24 @@ export default async function Today({
                           {m.subjectName ?? "No subject"}
                           {hoursLabel(m.estimatedMinutes)
                             ? ` · ${hoursLabel(m.estimatedMinutes)}`
-                            : ""}{" "}
-                          · +{m.xp} XP
+                            : ""}
                         </p>
                       </div>
                     </div>
                     {done ? (
-                      <span className="shrink-0 text-sm text-success">
-                        ✓ Done
-                      </span>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-sm text-success">✓ Done</span>
+                        <form action={uncompleteMissionAction}>
+                          <input
+                            type="hidden"
+                            name="missionId"
+                            value={m.missionId}
+                          />
+                          <button className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text">
+                            Undo
+                          </button>
+                        </form>
+                      </div>
                     ) : m.source === "mission" ? (
                       <form action={completeMissionAction}>
                         <input

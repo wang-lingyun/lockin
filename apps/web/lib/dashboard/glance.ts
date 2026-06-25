@@ -5,13 +5,12 @@ import { getTodaysMissions } from "@/lib/missions/getTodaysMissions";
 
 /**
  * One student's at-a-glance summary for the parent dashboard (PRD §10.1):
- * level, streak, today's mission completion, and the two attention counts.
- * All read-time aggregates (no cron, ADR 0006). A handful of cheap reads per
+ * streak, today's mission completion, and the two attention counts. All
+ * read-time aggregates (no cron, ADR 0006). A handful of cheap reads per
  * student — fine on the free tier for a small family.
  */
 export type StudentGlance = {
   student: Student;
-  level: number;
   streak: number;
   missionsDone: number;
   missionsTotal: number;
@@ -41,7 +40,6 @@ export async function studentGlance(
 
   return {
     student,
-    level: student.current_level,
     streak,
     missionsDone: missions.filter((m) => m.status === "completed").length,
     missionsTotal: missions.length,

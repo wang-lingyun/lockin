@@ -23,7 +23,6 @@ export const TaskCreateInput = z.object({
   title: trimmed(160),
   description: z.string().trim().max(2000).optional(),
   subjectId: uuid.optional(),
-  xpValue: z.number().int().min(0).max(1000).default(10),
   estimatedMinutes: z.number().int().min(0).max(600).optional(),
 });
 export type TaskCreateInput = z.infer<typeof TaskCreateInput>;
@@ -45,6 +44,15 @@ export const MissionCompleteInput = z.object({
   missionId: uuid,
 });
 export type MissionCompleteInput = z.infer<typeof MissionCompleteInput>;
+
+/**
+ * Undo an accidental completion (RPC `uncomplete_mission`; idempotent). A
+ * completed item on Today is always a persisted mission, so a missionId suffices.
+ */
+export const MissionUncompleteInput = z.object({
+  missionId: uuid,
+});
+export type MissionUncompleteInput = z.infer<typeof MissionUncompleteInput>;
 
 /**
  * A student's relationship to a subject/track (ADR 0005). `primary` = core,
@@ -434,9 +442,6 @@ export const CODING_FEATURE_STATUSES = [
 export const CodingFeatureStatus = z.enum(CODING_FEATURE_STATUSES);
 export type CodingFeatureStatus = z.infer<typeof CodingFeatureStatus>;
 
-/** XP awarded the first time a coding feature is completed (PRD §10.12). */
-export const CODING_FEATURE_XP = 20;
-
 /** Create a coding project for a student. */
 export const CodingProjectCreateInput = z.object({
   studentId: uuid,
@@ -483,10 +488,7 @@ export type CodingFeatureUpdateInput = z.infer<typeof CodingFeatureUpdateInput>;
 export const CodingFeatureDeleteInput = z.object({ id: uuid });
 export type CodingFeatureDeleteInput = z.infer<typeof CodingFeatureDeleteInput>;
 
-/**
- * Set a coding feature's status (RPC `set_coding_feature_status`). Completing a
- * feature for the first time awards `CODING_FEATURE_XP` (idempotent server-side).
- */
+/** Set a coding feature's status (RPC `set_coding_feature_status`). */
 export const CodingFeatureSetStatusInput = z.object({
   id: uuid,
   status: CodingFeatureStatus,
@@ -495,53 +497,5 @@ export type CodingFeatureSetStatusInput = z.infer<
   typeof CodingFeatureSetStatusInput
 >;
 
-/**
- * Rewards (PRD §10.12). A reward unlocks when the student's XP reaches
- * `requiredXp`; that's derived on read via `rewardUnlocked` (no cron, ADR 0006).
- */
-export const RewardCreateInput = z.object({
-  studentId: uuid,
-  title: trimmed(160),
-  description: z.string().trim().max(2000).optional(),
-  requiredXp: z.number().int().min(0).max(1000000).optional(),
-});
-export type RewardCreateInput = z.infer<typeof RewardCreateInput>;
-
-/** Partial update of a reward (by id). */
-export const RewardUpdateInput = z.object({
-  id: uuid,
-  title: trimmed(160).optional(),
-  description: z.string().trim().max(2000).nullable().optional(),
-  requiredXp: z.number().int().min(0).max(1000000).nullable().optional(),
-});
-export type RewardUpdateInput = z.infer<typeof RewardUpdateInput>;
-
-export const RewardDeleteInput = z.object({ id: uuid });
-export type RewardDeleteInput = z.infer<typeof RewardDeleteInput>;
-
-/**
- * Whether a reward is unlocked at a given XP total (pure; read-time derivation,
- * unit-tested). A reward with no threshold (`requiredXp` null) stays locked.
- */
-export function rewardUnlocked(
-  requiredXp: number | null,
-  currentXp: number,
-): boolean {
-  return requiredXp != null && currentXp >= requiredXp;
-}
-
-/**
- * Manual parent XP adjustment (RPC `adjust_student_xp`, source_type 'manual').
- * A nonzero integer delta with an optional reason; XP is clamped at 0 server-side.
- */
-export const XpAdjustInput = z.object({
-  studentId: uuid,
-  amount: z
-    .number()
-    .int()
-    .min(-100000)
-    .max(100000)
-    .refine((n) => n !== 0, { message: "amount must be nonzero" }),
-  reason: z.string().trim().max(200).optional(),
-});
-export type XpAdjustInput = z.infer<typeof XpAdjustInput>;
+// Rewards and manual XP adjustment were removed with the XP/Levels system
+// (ADR 0010, PRD §10.12 amended). Motivation is the streak alone.

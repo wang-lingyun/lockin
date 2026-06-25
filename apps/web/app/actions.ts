@@ -38,14 +38,12 @@ export async function createTaskAction(
   formData: FormData,
 ): Promise<ActionState> {
   const parent = await requireParent();
-  const xpRaw = String(formData.get("xpValue") ?? "").trim();
   const hoursRaw = String(formData.get("targetHours") ?? "").trim();
   const result = await dispatch(
     COMMANDS.taskCreate,
     {
       title: String(formData.get("title") ?? ""),
       subjectId: String(formData.get("subjectId") ?? "") || undefined,
-      xpValue: xpRaw === "" ? undefined : Number(xpRaw),
       estimatedMinutes:
         hoursRaw === "" ? undefined : Math.round(Number(hoursRaw) * 60),
     },
@@ -85,9 +83,22 @@ export async function completeMissionAction(formData: FormData): Promise<void> {
   revalidatePath("/");
 }
 
+/** Undo an accidental completion: flips a persisted mission back to not-done. */
+export async function uncompleteMissionAction(
+  formData: FormData,
+): Promise<void> {
+  const parent = await requireParent();
+  await dispatch(
+    COMMANDS.missionUncomplete,
+    { missionId: String(formData.get("missionId") ?? "") },
+    uiCommandContext(parent),
+  );
+  revalidatePath("/");
+}
+
 /**
  * Complete a *virtual* mission derived from a schedule block: the handler
- * materializes the dated mission (idempotent) then awards XP. Used by the
+ * materializes the dated mission (idempotent) then marks it done. Used by the
  * dashboard for items that have a `scheduleBlockId` but no persisted mission.
  */
 export async function completeScheduledAction(formData: FormData): Promise<void> {

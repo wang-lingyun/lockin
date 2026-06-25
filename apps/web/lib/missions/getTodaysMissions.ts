@@ -14,7 +14,6 @@ export type TodayMission = {
   title: string;
   subjectName: string | null;
   subjectColor: string | null;
-  xp: number;
   estimatedMinutes: number | null;
   reflection: string | null;
   status: MissionStatus;
@@ -23,7 +22,7 @@ export type TodayMission = {
 };
 
 type BlockWithJoins = ScheduleBlock & {
-  task: { id: string; title: string; xp_value: number } | null;
+  task: { id: string; title: string } | null;
   subject: { id: string; name: string; color: string | null } | null;
 };
 
@@ -36,7 +35,7 @@ export async function getTodaysMissions(
   const { data: missionData } = await supabase
     .from("daily_missions")
     .select(
-      "*, task:tasks(id,title,xp_value,estimated_minutes), subject:subjects(id,name,color)",
+      "*, task:tasks(id,title,estimated_minutes), subject:subjects(id,name,color)",
     )
     .eq("student_id", studentId)
     .eq("date", dateISO)
@@ -49,7 +48,6 @@ export async function getTodaysMissions(
     title: m.task?.title ?? "Untitled task",
     subjectName: m.subject?.name ?? null,
     subjectColor: m.subject?.color ?? null,
-    xp: m.task?.xp_value ?? 0,
     estimatedMinutes: m.task?.estimated_minutes ?? null,
     reflection: m.student_reflection ?? null,
     status: m.status,
@@ -63,7 +61,7 @@ export async function getTodaysMissions(
 
   const { data: blockData } = await supabase
     .from("schedule_blocks")
-    .select("*, task:tasks(id,title,xp_value), subject:subjects(id,name,color)")
+    .select("*, task:tasks(id,title), subject:subjects(id,name,color)")
     .eq("student_id", studentId)
     .neq("status", "cancelled");
   const blocks = (blockData ?? []) as BlockWithJoins[];
@@ -77,7 +75,6 @@ export async function getTodaysMissions(
       title: b.title,
       subjectName: b.subject?.name ?? null,
       subjectColor: b.subject?.color ?? null,
-      xp: b.task?.xp_value ?? 0,
       estimatedMinutes: b.estimated_minutes ?? null,
       reflection: null,
       status: "not_started",

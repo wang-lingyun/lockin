@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { assignTaskAction } from "../actions";
 
 type ActionState = { error: string } | null;
-type TaskOption = { id: string; title: string; xp_value: number };
+type TaskOption = { id: string; title: string };
 
 const input =
   "rounded-md border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-primary";
@@ -43,7 +43,7 @@ export function AssignTaskForm({
           </option>
           {tasks.map((t) => (
             <option key={t.id} value={t.id}>
-              {t.title} (+{t.xp_value} XP)
+              {t.title}
             </option>
           ))}
         </select>

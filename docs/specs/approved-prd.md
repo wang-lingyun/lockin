@@ -282,8 +282,22 @@ For students with Coding active. Each project: student, project name, goal, desc
 ### 10.11 Reflection Page
 Daily reflections. Prompts: what did I finish today? what was hard? what did I learn? what should I do tomorrow? Each reflection: student, date, completed work, difficulty/challenge, next step, parent comment (optional).
 
-### 10.12 XP, Levels, Streaks, and Rewards
-XP examples (math task 10, 5 hard math problems 15, mistake correction 10, coding task 15, coding feature 20, Chinese reading 10, English writing 10, reflection 5, bonus physics/SAT 5). Levels: L1 0, L2 100, L3 250, L4 500, L5 800, L6 1200. Streak: counts if student completes a configurable minimum daily requirement. Rewards: weekly badge, parent-approved reward, movie/game time, special activity, project showcase.
+### 10.12 Streak (XP, Levels, and Rewards removed)
+**Amended 2026-06-25 (ADR 0010):** the MVP keeps **only the daily Streak** as a motivation
+signal. XP/points, Levels, and Rewards have been removed from the product. A day counts toward
+the streak if the student writes a reflection **OR** completes at least one mission (the fixed
+"minimum daily requirement"; a per-student configurable threshold is still deferred). The streak
+is computed on read (ADR 0006).
+
+The XP-related database columns/tables (`students.current_xp/current_level`, `tasks.xp_value`,
+`daily_missions.xp_awarded`, `coding_features.xp_awarded`, the `rewards` table, the `xp_events`
+ledger, and the `level_for_xp`/`adjust_student_xp` functions) are left **dormant** — present but
+unused — rather than dropped, since one Supabase instance backs both dev and production.
+
+*Original (now removed):* XP examples (math task 10, 5 hard math problems 15, mistake correction
+10, coding task 15, coding feature 20, Chinese reading 10, English writing 10, reflection 5, bonus
+physics/SAT 5); Levels L1 0 → L6 1200; Rewards (weekly badge, parent-approved reward, movie/game
+time, special activity, project showcase).
 
 ### 10.13 Personalized Learning Plan Module
 MVP includes the data structure even if plans are manually created first. A plan can be parent-created, AI-generated later, parent-approved, active, completed, archived. Each plan: student, week start date, source homework submissions, summary, priority subjects, priority topics, recommended tasks, parent notes, student notes, status.
@@ -369,7 +383,7 @@ Core tables/objects (field lists below are authoritative for the MVP schema):
 13. **CodingProject** — id, student_id, project_name, description, goal, status, demo_link, github_link, created_at, updated_at
 14. **CodingFeature** — id, project_id, title, description, status, created_at, updated_at
 15. **Reflection** — id, student_id, date, what_finished, what_was_hard, what_learned, what_to_do_next, parent_comment, created_at, updated_at
-16. **Reward** — id, student_id, title, description, required_xp, unlocked, unlocked_at, created_at, updated_at
+16. **Reward** — id, student_id, title, description, required_xp, unlocked, unlocked_at, created_at, updated_at — *Retired from the MVP surface 2026-06-25 (ADR 0010): the `rewards` table is left dormant (no UI, no commands).*
 17. **PersonalizedLearningPlan** — id, student_id, week_start_date, generated_from_homework_ids, summary, priority_subjects, priority_topics, recommended_tasks, parent_notes, student_notes, status, created_at, updated_at
 18. **AIAnalysisResult** — id, homework_submission_id, student_id, analysis_type, model_name, input_snapshot, output_summary, detected_topics, detected_strengths, detected_weaknesses, mistake_patterns, suggested_tasks, confidence_score, created_at
 19. **SubjectRubric** — id, subject_id, rubric_name, criteria, grade_level, description, created_at, updated_at
@@ -410,7 +424,7 @@ Core tables/objects (field lists below are authoritative for the MVP schema):
 9. Mistake / Revision Bank
 10. Coding Project Tracker
 11. Reflection Page
-12. Rewards / XP Page
+12. ~~Rewards / XP Page~~ — *Retired from the MVP surface 2026-06-25 (ADR 0010).*
 13. Basic settings page
 14. Schedule / Calendar page (per-student, track-aware, dated)
 15. Admin & Agent settings page (manage agent service credentials, view AdminCommandLog audit trail)
@@ -447,8 +461,8 @@ Seed: 1 parent user, 2 student profiles, default subjects, default task types, i
 8. Parent can assign tasks to one or more students.
 9. Each student can view today's missions.
 10. Each student can mark missions as completed.
-11. Completing missions adds XP.
-12. Dashboard shows XP, level, streak, and weekly progress.
+11. Completing a mission marks it done and counts toward the streak (and can be undone). *(Amended 2026-06-25, ADR 0010 — was "Completing missions adds XP.")*
+12. Dashboard (Today) shows today's completion % and the streak; Manage shows weekly progress. *(Amended 2026-06-25, ADR 0010 — was "Dashboard shows XP, level, streak, and weekly progress.")*
 13. Parent can create weekly goals.
 14. Students can submit raw homework text.
 15. Homework submissions are stored per student.
