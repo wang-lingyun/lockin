@@ -22,15 +22,15 @@ describe("hoursLabel", () => {
 });
 
 describe("formatLongDate", () => {
-  it("formats a mid-year date", () => {
-    expect(formatLongDate("2026-06-22")).toBe("June 22, 2026");
+  it("formats a mid-year date with weekday", () => {
+    expect(formatLongDate("2026-06-22")).toBe("Monday, June 22, 2026");
   });
 
   it("handles January (boundary)", () => {
-    expect(formatLongDate("2026-01-01")).toBe("January 1, 2026");
+    expect(formatLongDate("2026-01-01")).toBe("Thursday, January 1, 2026");
   });
 
   it("handles December (boundary)", () => {
-    expect(formatLongDate("2025-12-31")).toBe("December 31, 2025");
+    expect(formatLongDate("2025-12-31")).toBe("Wednesday, December 31, 2025");
   });
 });

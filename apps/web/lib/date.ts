@@ -27,15 +27,21 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+const WEEKDAY_NAMES = [
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+];
+
 /**
- * Format an ISO calendar date (YYYY-MM-DD) as a friendly long date, e.g.
- * "2026-06-22" → "June 22, 2026". Pure: splits the ISO string (no `Date`), so
- * it never drifts across timezones — matches `previousISODate`'s style.
+ * Format an ISO calendar date (YYYY-MM-DD) as a friendly long date with weekday,
+ * e.g. "2026-06-22" → "Monday, June 22, 2026". Pure: parses the date parts at
+ * UTC noon (no local `Date`), so the weekday and the date never drift across
+ * timezones — matches `previousISODate`'s style.
  */
 export function formatLongDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
+  const weekday = WEEKDAY_NAMES[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   const month = MONTH_NAMES[m - 1] ?? "";
-  return `${month} ${d}, ${y}`;
+  return `${weekday}, ${month} ${d}, ${y}`;
 }
 
 /**
