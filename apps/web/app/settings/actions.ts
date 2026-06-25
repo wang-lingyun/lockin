@@ -82,6 +82,23 @@ export async function renameSubjectAction(
   return null;
 }
 
+/** Delete a parent-owned subject (RLS blocks built-in/default subjects). */
+export async function deleteSubjectAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parent = await requireParent();
+  const result = await dispatch(
+    COMMANDS.subjectDelete,
+    { id: String(formData.get("id") ?? "") },
+    uiCommandContext(parent),
+  );
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/settings");
+  revalidatePath("/manage");
+  return null;
+}
+
 /** Add a sub-category (track) under a subject. */
 export async function createTrackAction(
   _prev: ActionState,
@@ -98,6 +115,7 @@ export async function createTrackAction(
   );
   if (!result.ok) return { error: result.error };
   revalidatePath("/settings");
+  revalidatePath("/manage");
   return null;
 }
 
@@ -117,6 +135,24 @@ export async function renameTrackAction(
   );
   if (!result.ok) return { error: result.error };
   revalidatePath("/settings");
+  revalidatePath("/manage");
+  return null;
+}
+
+/** Delete a parent-owned track (RLS blocks built-in/default tracks). */
+export async function deleteTrackAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parent = await requireParent();
+  const result = await dispatch(
+    COMMANDS.trackDelete,
+    { id: String(formData.get("id") ?? "") },
+    uiCommandContext(parent),
+  );
+  if (!result.ok) return { error: result.error };
+  revalidatePath("/settings");
+  revalidatePath("/manage");
   return null;
 }
 

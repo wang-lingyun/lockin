@@ -6,8 +6,10 @@ import type {
   MissionUncompleteInput,
   SubjectCreateInput,
   SubjectUpdateInput,
+  SubjectDeleteInput,
   TrackCreateInput,
   TrackUpdateInput,
+  TrackDeleteInput,
   SetSubjectPriorityInput,
   SetTrackPriorityInput,
   ScheduleBlockCreateInput,
@@ -199,6 +201,19 @@ export async function subjectUpdate(
   return data as Subject;
 }
 
+/** Delete a parent-owned subject (RLS gates ownership; defaults are read-only). */
+export async function subjectDelete(
+  input: SubjectDeleteInput,
+  ctx: CommandContext,
+): Promise<{ id: string }> {
+  const { error } = await ctx.supabase
+    .from("subjects")
+    .delete()
+    .eq("id", input.id);
+  if (error) throw new Error(error.message);
+  return { id: input.id };
+}
+
 export async function trackCreate(
   input: TrackCreateInput,
   ctx: CommandContext,
@@ -248,6 +263,19 @@ export async function trackUpdate(
     .single();
   if (error) throw new Error(error.message);
   return data as SubjectTrack;
+}
+
+/** Delete a parent-owned track (RLS gates ownership; defaults are read-only). */
+export async function trackDelete(
+  input: TrackDeleteInput,
+  ctx: CommandContext,
+): Promise<{ id: string }> {
+  const { error } = await ctx.supabase
+    .from("subject_tracks")
+    .delete()
+    .eq("id", input.id);
+  if (error) throw new Error(error.message);
+  return { id: input.id };
 }
 
 export async function studentSetSubjectPriority(

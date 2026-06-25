@@ -4,12 +4,14 @@ import { AppHeader } from "@/app/_components/AppHeader";
 import { PriorityControl } from "./_components/PriorityControl";
 import { AddSubjectForm } from "./_components/AddSubjectForm";
 import { AddTrackForm } from "./_components/AddTrackForm";
-import { InlineRename } from "./_components/InlineRename";
+import { OwnedItemControls } from "./_components/OwnedItemControls";
 import {
   setSubjectPriorityAction,
   setTrackPriorityAction,
   renameSubjectAction,
   renameTrackAction,
+  deleteSubjectAction,
+  deleteTrackAction,
   setTrackActiveAction,
 } from "./actions";
 
@@ -30,6 +32,8 @@ type TrackRow = {
   is_default: boolean;
   owner_parent_id: string | null;
 };
+
+const badge = "rounded-full bg-surface-2 px-2 py-0.5 text-xs text-muted";
 
 export default async function SettingsPage({
   searchParams,
@@ -89,6 +93,121 @@ export default async function SettingsPage({
       trackPriority.set(r.subject_track_id, r.priority_type as PriorityType);
   }
 
+  // Main list = the parent's own subjects (always shown) + built-ins that are
+  // active for the selected student. Off built-ins collapse into <details>.
+  const isActiveSubject = (s: SubjectRow) =>
+    (subjectPriority.get(s.id) ?? "inactive") !== "inactive";
+  const mainSubjects = subjects.filter((s) => owns(s) || isActiveSubject(s));
+  const offSubjects = subjects.filter((s) => !owns(s) && !isActiveSubject(s));
+
+  const renderSubjectCard = (subject: SubjectRow) => {
+    const subjTracks = tracksBySubject.get(subject.id) ?? [];
+    const subjectEditable = owns(subject);
+    return (
+      <li
+        key={subject.id}
+        className="rounded-xl border border-border bg-surface p-4"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <span className="flex items-center gap-2">
+            <span
+              className="inline-block h-3 w-3 shrink-0 rounded-full"
+              style={{ background: subject.color ?? "#6366f1" }}
+            />
+            {subjectEditable ? (
+              <OwnedItemControls
+                kind="subject"
+                id={subject.id}
+                name={subject.name}
+                renameAction={renameSubjectAction}
+                deleteAction={deleteSubjectAction}
+              />
+            ) : (
+              <>
+                <span className="font-medium text-text">{subject.name}</span>
+                <span className={badge}>Built-in</span>
+              </>
+            )}
+          </span>
+          {active ? (
+            <PriorityControl
+              action={setSubjectPriorityAction}
+              hidden={{ studentId: active.id, subjectId: subject.id }}
+              current={subjectPriority.get(subject.id) ?? "inactive"}
+            />
+          ) : null}
+        </div>
+
+        {subjTracks.length > 0 ? (
+          <ul className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+            {subjTracks.map((t) => {
+              const trackEditable = owns(t);
+              return (
+                <li
+                  key={t.id}
+                  className="flex items-center justify-between gap-3 pl-5"
+                >
+                  <span className="flex items-center gap-2 text-sm text-muted">
+                    {trackEditable ? (
+                      <OwnedItemControls
+                        kind="sub-category"
+                        id={t.id}
+                        name={t.name}
+                        renameAction={renameTrackAction}
+                        deleteAction={deleteTrackAction}
+                      />
+                    ) : (
+                      <>
+                        <span>{t.name}</span>
+                        <span className={badge}>Built-in</span>
+                      </>
+                    )}
+                    {!t.is_active ? (
+                      <span className="rounded bg-border px-1.5 py-0.5 text-xs text-muted">
+                        hidden
+                      </span>
+                    ) : null}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {trackEditable ? (
+                      <form action={setTrackActiveAction}>
+                        <input type="hidden" name="id" value={t.id} />
+                        <input
+                          type="hidden"
+                          name="isActive"
+                          value={t.is_active ? "false" : "true"}
+                        />
+                        <button className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text">
+                          {t.is_active ? "Hide" : "Show"}
+                        </button>
+                      </form>
+                    ) : null}
+                    {active ? (
+                      <PriorityControl
+                        action={setTrackPriorityAction}
+                        hidden={{
+                          studentId: active.id,
+                          subjectTrackId: t.id,
+                        }}
+                        current={trackPriority.get(t.id) ?? "inactive"}
+                      />
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+
+        {subjectEditable ? (
+          <div className="mt-3 border-t border-border pt-3 pl-5">
+            <AddTrackForm subjectId={subject.id} />
+          </div>
+        ) : null}
+      </li>
+    );
+  };
+
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
       <AppHeader
@@ -102,7 +221,8 @@ export default async function SettingsPage({
         <h1 className="text-2xl font-bold text-text">Subjects &amp; tracks</h1>
         <p className="text-sm text-muted">
           Add your own subjects and sub-categories, then turn them on per student
-          and mark each as primary or bonus.
+          and mark each as primary or bonus. Built-in subjects are shared and
+          can&rsquo;t be renamed or deleted — switch them off to hide them.
         </p>
       </div>
 
@@ -117,101 +237,22 @@ export default async function SettingsPage({
           </section>
 
           {active ? (
-            <ul className="flex flex-col gap-3">
-              {subjects.map((subject) => {
-                const subjTracks = tracksBySubject.get(subject.id) ?? [];
-                const subjectEditable = owns(subject);
-                return (
-                  <li
-                    key={subject.id}
-                    className="rounded-xl border border-border bg-surface p-4"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="flex items-center gap-2 font-medium text-text">
-                        <span
-                          className="inline-block h-3 w-3 rounded-full"
-                          style={{ background: subject.color ?? "#6366f1" }}
-                        />
-                        {subjectEditable ? (
-                          <InlineRename
-                            action={renameSubjectAction}
-                            id={subject.id}
-                            defaultName={subject.name}
-                          />
-                        ) : (
-                          subject.name
-                        )}
-                      </span>
-                      <PriorityControl
-                        action={setSubjectPriorityAction}
-                        hidden={{ studentId: active.id, subjectId: subject.id }}
-                        current={subjectPriority.get(subject.id) ?? "inactive"}
-                      />
-                    </div>
+            <>
+              <ul className="flex flex-col gap-3">
+                {mainSubjects.map(renderSubjectCard)}
+              </ul>
 
-                    {subjTracks.length > 0 ? (
-                      <ul className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-                        {subjTracks.map((t) => {
-                          const trackEditable = owns(t);
-                          return (
-                            <li
-                              key={t.id}
-                              className="flex items-center justify-between gap-3 pl-5"
-                            >
-                              <span className="flex items-center gap-2 text-sm text-muted">
-                                {trackEditable ? (
-                                  <InlineRename
-                                    action={renameTrackAction}
-                                    id={t.id}
-                                    defaultName={t.name}
-                                  />
-                                ) : (
-                                  t.name
-                                )}
-                                {!t.is_active ? (
-                                  <span className="rounded bg-border px-1.5 py-0.5 text-xs text-muted">
-                                    hidden
-                                  </span>
-                                ) : null}
-                              </span>
-                              <div className="flex items-center gap-2">
-                                {trackEditable ? (
-                                  <form action={setTrackActiveAction}>
-                                    <input type="hidden" name="id" value={t.id} />
-                                    <input
-                                      type="hidden"
-                                      name="isActive"
-                                      value={t.is_active ? "false" : "true"}
-                                    />
-                                    <button className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text">
-                                      {t.is_active ? "Hide" : "Show"}
-                                    </button>
-                                  </form>
-                                ) : null}
-                                <PriorityControl
-                                  action={setTrackPriorityAction}
-                                  hidden={{
-                                    studentId: active.id,
-                                    subjectTrackId: t.id,
-                                  }}
-                                  current={trackPriority.get(t.id) ?? "inactive"}
-                                />
-                              </div>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : null}
-
-                    {subjectEditable ? (
-                      <div className="mt-3 border-t border-border pt-3">
-                        <AddTrackForm subjectId={subject.id} />
-                      </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
+              {offSubjects.length > 0 ? (
+                <details className="mt-4 rounded-xl border border-border bg-surface">
+                  <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-muted hover:text-text">
+                    Off subjects ({offSubjects.length})
+                  </summary>
+                  <ul className="flex flex-col gap-3 px-3 pb-3">
+                    {offSubjects.map(renderSubjectCard)}
+                  </ul>
+                </details>
+              ) : null}
+            </>
           ) : null}
         </>
       )}

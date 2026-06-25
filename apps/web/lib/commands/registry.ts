@@ -7,8 +7,10 @@ import {
   MissionUncompleteInput,
   SubjectCreateInput,
   SubjectUpdateInput,
+  SubjectDeleteInput,
   TrackCreateInput,
   TrackUpdateInput,
+  TrackDeleteInput,
   SetSubjectPriorityInput,
   SetTrackPriorityInput,
   ScheduleBlockCreateInput,
@@ -45,8 +47,10 @@ import {
   missionUncomplete,
   subjectCreate,
   subjectUpdate,
+  subjectDelete,
   trackCreate,
   trackUpdate,
+  trackDelete,
   studentSetSubjectPriority,
   studentSetTrackPriority,
   scheduleBlockCreate,
@@ -110,6 +114,10 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
     schema: SubjectUpdateInput,
     handler: subjectUpdate as AnyHandler,
   },
+  [COMMANDS.subjectDelete]: {
+    schema: SubjectDeleteInput,
+    handler: subjectDelete as AnyHandler,
+  },
   [COMMANDS.trackCreate]: {
     schema: TrackCreateInput,
     handler: trackCreate as AnyHandler,
@@ -117,6 +125,10 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
   [COMMANDS.trackUpdate]: {
     schema: TrackUpdateInput,
     handler: trackUpdate as AnyHandler,
+  },
+  [COMMANDS.trackDelete]: {
+    schema: TrackDeleteInput,
+    handler: trackDelete as AnyHandler,
   },
   [COMMANDS.studentSetSubjectPriority]: {
     schema: SetSubjectPriorityInput,

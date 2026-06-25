@@ -6,6 +6,8 @@ import {
   MissionCompleteInput,
   MissionUncompleteInput,
   TrackCreateInput,
+  SubjectDeleteInput,
+  TrackDeleteInput,
   SetSubjectPriorityInput,
   SetTrackPriorityInput,
   ScheduleBlockCreateInput,
@@ -49,6 +51,18 @@ describe("TaskCreateInput", () => {
     expect(
       TaskCreateInput.safeParse({ title: "x", subjectTrackId: "nope" }).success,
     ).toBe(false);
+  });
+});
+
+describe("SubjectDeleteInput / TrackDeleteInput", () => {
+  it("accept a uuid id", () => {
+    expect(SubjectDeleteInput.safeParse({ id: UUID }).success).toBe(true);
+    expect(TrackDeleteInput.safeParse({ id: UUID }).success).toBe(true);
+  });
+
+  it("reject a non-uuid or missing id", () => {
+    expect(SubjectDeleteInput.safeParse({ id: "nope" }).success).toBe(false);
+    expect(TrackDeleteInput.safeParse({}).success).toBe(false);
   });
 });
 

@@ -82,6 +82,10 @@ export const SubjectUpdateInput = z.object({
 });
 export type SubjectUpdateInput = z.infer<typeof SubjectUpdateInput>;
 
+/** Delete a parent-owned subject (RLS blocks built-in/default subjects). */
+export const SubjectDeleteInput = z.object({ id: uuid });
+export type SubjectDeleteInput = z.infer<typeof SubjectDeleteInput>;
+
 /** Create a track (sub-subject) under a subject. */
 export const TrackCreateInput = z.object({
   subjectId: uuid,
@@ -104,6 +108,10 @@ export const TrackUpdateInput = z.object({
   isActive: z.boolean().optional(),
 });
 export type TrackUpdateInput = z.infer<typeof TrackUpdateInput>;
+
+/** Delete a parent-owned track (RLS blocks built-in/default tracks). */
+export const TrackDeleteInput = z.object({ id: uuid });
+export type TrackDeleteInput = z.infer<typeof TrackDeleteInput>;
 
 /** Set a student's priority for a subject (upsert). */
 export const SetSubjectPriorityInput = z.object({
