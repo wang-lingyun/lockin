@@ -258,6 +258,6 @@ export type DailyMission = {
 
 /** A mission joined with its task + subject, as shown on the dashboard. */
 export type MissionWithTask = DailyMission & {
-  task: Pick<Task, "id" | "title" | "estimated_minutes"> | null;
+  task: Pick<Task, "id" | "title" | "description" | "estimated_minutes"> | null;
   subject: Pick<Subject, "id" | "name" | "color"> | null;
 };

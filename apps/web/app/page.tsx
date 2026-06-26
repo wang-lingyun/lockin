@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { requireParent } from "@/lib/auth/session";
-import { todayISO, formatLongDate } from "@/lib/date";
+import {
+  todayISO,
+  formatLongDate,
+  previousISODate,
+  nextISODate,
+} from "@/lib/date";
 import { hoursLabel } from "@/lib/format";
+import { linkify } from "@/lib/linkify";
 import { withStudent } from "@/lib/nav/withStudent";
 import {
   completeMissionAction,
@@ -22,12 +28,17 @@ import type { Student } from "@/lib/db/types";
 export default async function Today({
   searchParams,
 }: {
-  searchParams: Promise<{ student?: string }>;
+  searchParams: Promise<{ student?: string; date?: string }>;
 }) {
   const parent = await requireParent();
   const { supabase } = parent;
   const sp = await searchParams;
   const today = todayISO();
+  // The day being viewed: a valid ?date=YYYY-MM-DD, else today. Lets the parent
+  // page back/forward to complete or reflect on a mission they missed that day.
+  const viewDate =
+    sp.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : today;
+  const isToday = viewDate === today;
 
   const { data: studentsData } = await supabase
     .from("students")
@@ -38,7 +49,7 @@ export default async function Today({
     students.find((s) => s.id === sp.student) ?? students[0] ?? null;
 
   const missions = active
-    ? await getTodaysMissions(supabase, active.id, today)
+    ? await getTodaysMissions(supabase, active.id, viewDate)
     : [];
   const missionsDone = missions.filter((m) => m.status === "completed").length;
   const pct = missions.length
@@ -86,7 +97,37 @@ export default async function Today({
                   </span>
                 ) : null}
               </h2>
-              <p className="text-sm text-muted">{formatLongDate(today)}</p>
+              <div className="mt-0.5 flex items-center gap-2">
+                <Link
+                  href={withStudent("/", active.id, {
+                    date: previousISODate(viewDate),
+                  })}
+                  className="rounded-md border border-border px-1.5 py-0.5 text-xs text-muted hover:text-text"
+                  aria-label="Previous day"
+                >
+                  ←
+                </Link>
+                <span className="text-sm text-muted">
+                  {formatLongDate(viewDate)}
+                </span>
+                <Link
+                  href={withStudent("/", active.id, {
+                    date: nextISODate(viewDate),
+                  })}
+                  className="rounded-md border border-border px-1.5 py-0.5 text-xs text-muted hover:text-text"
+                  aria-label="Next day"
+                >
+                  →
+                </Link>
+                {!isToday ? (
+                  <Link
+                    href={withStudent("/", active.id)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Today
+                  </Link>
+                ) : null}
+              </div>
               <Link
                 href={withStudent("/schedule", active.id)}
                 className="text-xs text-muted hover:text-text"
@@ -96,7 +137,8 @@ export default async function Today({
             </div>
             <div className="shrink-0 text-right text-sm text-muted">
               <p>
-                ✅ {missionsDone}/{missions.length} today
+                ✅ {missionsDone}/{missions.length}
+                {isToday ? " today" : ""}
               </p>
               {totalLabel ? <p>~{totalLabel} planned</p> : null}
             </div>
@@ -105,7 +147,7 @@ export default async function Today({
           <div>
             <div className="mb-1 flex items-baseline justify-between">
               <span className="text-sm font-semibold text-text">
-                {pct}% done today
+                {pct}% done{isToday ? " today" : ""}
               </span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
@@ -117,7 +159,7 @@ export default async function Today({
           </div>
 
           <h3 className="mb-2 mt-6 text-sm font-semibold uppercase tracking-wide text-muted">
-            Today&apos;s missions
+            {isToday ? "Today's missions" : "Missions"}
           </h3>
           {missions.length === 0 ? (
             <p className="text-sm text-muted">
@@ -157,6 +199,29 @@ export default async function Today({
                             ? ` · ${hoursLabel(m.estimatedMinutes)}`
                             : ""}
                         </p>
+                        {m.description ? (
+                          <p
+                            className={`mt-0.5 text-xs text-muted ${
+                              done ? "line-through" : ""
+                            }`}
+                          >
+                            {linkify(m.description).map((tok, i) =>
+                              tok.type === "link" ? (
+                                <a
+                                  key={i}
+                                  href={tok.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary underline hover:opacity-80"
+                                >
+                                  {tok.label}
+                                </a>
+                              ) : (
+                                <span key={i}>{tok.value}</span>
+                              ),
+                            )}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
@@ -197,7 +262,7 @@ export default async function Today({
                             name="scheduleBlockId"
                             value={m.scheduleBlockId}
                           />
-                          <input type="hidden" name="date" value={today} />
+                          <input type="hidden" name="date" value={viewDate} />
                           <button className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg hover:opacity-90">
                             Mark done
                           </button>
@@ -227,7 +292,7 @@ export default async function Today({
                       scheduleBlockId={
                         m.source === "block" ? m.scheduleBlockId : undefined
                       }
-                      date={m.source === "block" ? today : undefined}
+                      date={m.source === "block" ? viewDate : undefined}
                     />
                   </li>
                 );

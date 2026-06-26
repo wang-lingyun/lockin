@@ -12,6 +12,7 @@ export type TodayMission = {
   source: "mission" | "block";
   key: string;
   title: string;
+  description: string | null;
   subjectName: string | null;
   subjectColor: string | null;
   estimatedMinutes: number | null;
@@ -35,7 +36,7 @@ export async function getTodaysMissions(
   const { data: missionData } = await supabase
     .from("daily_missions")
     .select(
-      "*, task:tasks(id,title,estimated_minutes), subject:subjects(id,name,color)",
+      "*, task:tasks(id,title,description,estimated_minutes), subject:subjects(id,name,color)",
     )
     .eq("student_id", studentId)
     .eq("date", dateISO)
@@ -62,6 +63,11 @@ export async function getTodaysMissions(
       m.task?.title ??
       (m.schedule_block_id ? blockById.get(m.schedule_block_id)?.title : null) ??
       "Untitled task",
+    description:
+      m.task?.description ??
+      (m.schedule_block_id
+        ? blockById.get(m.schedule_block_id)?.notes ?? null
+        : null),
     subjectName: m.subject?.name ?? null,
     subjectColor: m.subject?.color ?? null,
     estimatedMinutes: m.task?.estimated_minutes ?? null,
@@ -82,6 +88,7 @@ export async function getTodaysMissions(
       source: "block",
       key: `b:${b.id}`,
       title: b.title,
+      description: b.notes ?? null,
       subjectName: b.subject?.name ?? null,
       subjectColor: b.subject?.color ?? null,
       estimatedMinutes: b.estimated_minutes ?? null,
