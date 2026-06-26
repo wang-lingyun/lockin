@@ -97,18 +97,33 @@ export default async function ManagePage({
       .map((t) => ({ id: t.id, title: t.title }));
   }
 
-  // Full task list for the "Tasks" panel (rename/delete), labelled by track or
-  // subject name. Built from the already-fetched subjects/tracks (track wins).
+  // Task list for the "Tasks" panel (rename/delete), scoped to the active
+  // student: a task belongs to a student once it's been assigned to them
+  // (`task_assignments`). Tasks are parent-owned and shared, so without this the
+  // panel showed every student's tasks at once. Labelled by track or subject
+  // name (track wins), built from the already-fetched subjects/tracks.
   const subjectName = new Map((subjects ?? []).map((s) => [s.id, s.name]));
   const trackName = new Map((tracks ?? []).map((t) => [t.id, t.name]));
-  const manageTasks = allTasks.map((t) => ({
-    id: t.id,
-    title: t.title,
-    label:
-      (t.subject_track_id ? trackName.get(t.subject_track_id) : null) ??
-      (t.subject_id ? subjectName.get(t.subject_id) : null) ??
-      null,
-  }));
+  let manageTasks: { id: string; title: string; label: string | null }[] = [];
+  if (active) {
+    const { data: assigns } = await supabase
+      .from("task_assignments")
+      .select("task_id")
+      .eq("student_id", active.id);
+    const assignedTaskIds = new Set(
+      (assigns ?? []).map((r) => r.task_id as string),
+    );
+    manageTasks = allTasks
+      .filter((t) => assignedTaskIds.has(t.id))
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        label:
+          (t.subject_track_id ? trackName.get(t.subject_track_id) : null) ??
+          (t.subject_id ? subjectName.get(t.subject_id) : null) ??
+          null,
+      }));
+  }
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -147,10 +162,14 @@ export default async function ManagePage({
 
       {/* Admin */}
       <section className="flex flex-col gap-6">
-        <Panel title="Tasks">
-          <TaskList tasks={manageTasks} />
+        <Panel title={active ? `${active.name}'s tasks` : "Tasks"}>
+          {active ? (
+            <TaskList tasks={manageTasks} />
+          ) : (
+            <p className="text-sm text-muted">Add a student first.</p>
+          )}
         </Panel>
-        <Panel title="Assign a task to today">
+        <Panel title="Assign a task">
           {active ? (
             <AssignTaskForm
               studentId={active.id}
