@@ -30,3 +30,6 @@ npm-debug.log*
 .idea/
 .vscode/
 *.swp
+
+# schedule-update skill local DB credentials (never commit)
+.claude/skills/*/credentials.env
