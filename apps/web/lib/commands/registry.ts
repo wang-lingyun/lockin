@@ -8,6 +8,8 @@ import {
   MissionCompleteInput,
   MissionUncompleteInput,
   MissionDeleteInput,
+  MissionSetStatusInput,
+  MissionDeferInput,
   SubjectCreateInput,
   SubjectUpdateInput,
   SubjectDeleteInput,
@@ -63,6 +65,8 @@ import {
   scheduleBlockUpdate,
   scheduleBlockDelete,
   missionCompleteScheduled,
+  missionSetStatus,
+  missionDefer,
   missionSetReflection,
   weeklyGoalCreate,
   weeklyGoalUpdate,
@@ -123,6 +127,14 @@ export const REGISTRY: Record<CommandName, CommandDefinition<unknown, unknown>> 
   [COMMANDS.missionDelete]: {
     schema: MissionDeleteInput,
     handler: missionDelete as AnyHandler,
+  },
+  [COMMANDS.missionSetStatus]: {
+    schema: MissionSetStatusInput,
+    handler: missionSetStatus as AnyHandler,
+  },
+  [COMMANDS.missionDefer]: {
+    schema: MissionDeferInput,
+    handler: missionDefer as AnyHandler,
   },
   [COMMANDS.subjectCreate]: {
     schema: SubjectCreateInput,

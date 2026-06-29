@@ -241,7 +241,12 @@ export type CodingProjectRow = CodingProject & {
 // The Reward type was removed with the XP/Levels system (ADR 0010). The `rewards`
 // table is left dormant in the DB but is no longer surfaced anywhere in the app.
 
-export type MissionStatus = "not_started" | "in_progress" | "completed";
+export type MissionStatus =
+  | "not_started"
+  | "in_progress"
+  | "completed"
+  | "deferred"
+  | "skipped";
 
 export type DailyMission = {
   id: string;
@@ -253,6 +258,8 @@ export type DailyMission = {
   date: string;
   status: MissionStatus;
   completed_at: string | null;
+  notes: string | null;
+  deferred_to: string | null;
   student_reflection: string | null;
 };
 

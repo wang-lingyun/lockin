@@ -17,6 +17,8 @@ import {
   ScheduleBlockUpdateInput,
   CompleteScheduledInput,
   MissionSetReflectionInput,
+  MissionSetStatusInput,
+  MissionDeferInput,
   WeeklyGoalCreateInput,
   WeeklyGoalUpdateInput,
   WeeklyGoalIncrementInput,
@@ -351,6 +353,100 @@ describe("MissionSetReflectionInput", () => {
       MissionSetReflectionInput.safeParse({
         missionId: UUID,
         reflection: "x".repeat(2001),
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("MissionSetStatusInput", () => {
+  it("accepts in_progress on a persisted mission", () => {
+    expect(
+      MissionSetStatusInput.safeParse({
+        missionId: UUID,
+        status: "in_progress",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("accepts a scheduled block via the trio", () => {
+    expect(
+      MissionSetStatusInput.safeParse({
+        studentId: UUID,
+        scheduleBlockId: UUID,
+        date: "2026-06-28",
+        status: "not_started",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("accepts 'skipped' (didn't do it)", () => {
+    expect(
+      MissionSetStatusInput.safeParse({
+        missionId: UUID,
+        status: "skipped",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects 'completed' (completion has its own command)", () => {
+    expect(
+      MissionSetStatusInput.safeParse({
+        missionId: UUID,
+        status: "completed",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects when no target is provided", () => {
+    expect(
+      MissionSetStatusInput.safeParse({ status: "in_progress" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("MissionDeferInput", () => {
+  it("accepts a persisted mission + toDate", () => {
+    expect(
+      MissionDeferInput.safeParse({
+        missionId: UUID,
+        toDate: "2026-07-02",
+        note: "finish ch.3 first",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("accepts a scheduled block via the trio + toDate", () => {
+    expect(
+      MissionDeferInput.safeParse({
+        studentId: UUID,
+        scheduleBlockId: UUID,
+        date: "2026-06-28",
+        toDate: "2026-06-30",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects a non-ISO toDate", () => {
+    expect(
+      MissionDeferInput.safeParse({
+        missionId: UUID,
+        toDate: "07/02/2026",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects when no target is provided", () => {
+    expect(
+      MissionDeferInput.safeParse({ toDate: "2026-07-02" }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a note over the max length", () => {
+    expect(
+      MissionDeferInput.safeParse({
+        missionId: UUID,
+        toDate: "2026-07-02",
+        note: "x".repeat(2001),
       }).success,
     ).toBe(false);
   });

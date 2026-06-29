@@ -14,9 +14,12 @@ import {
   completeScheduledAction,
   uncompleteMissionAction,
   deleteMissionAction,
+  setMissionProgressAction,
 } from "./actions";
 import { AppHeader } from "./_components/AppHeader";
+import { Menu } from "./_components/Menu";
 import { MissionReflection } from "./_components/MissionReflection";
+import { MissionDefer } from "./_components/MissionDefer";
 import { getTodaysMissions } from "@/lib/missions/getTodaysMissions";
 import type { Student } from "@/lib/db/types";
 
@@ -51,11 +54,17 @@ export default async function Today({
   const missions = active
     ? await getTodaysMissions(supabase, active.id, viewDate)
     : [];
-  const missionsDone = missions.filter((m) => m.status === "completed").length;
-  const pct = missions.length
-    ? Math.round((missionsDone / missions.length) * 100)
+  // Deferred missions are tombstones ("Moved to …") — kept for history but out of
+  // the day's progress and planned-time totals. Partial (in_progress) still counts
+  // as not-done.
+  const activeMissions = missions.filter((m) => m.status !== "deferred");
+  const missionsDone = activeMissions.filter(
+    (m) => m.status === "completed",
+  ).length;
+  const pct = activeMissions.length
+    ? Math.round((missionsDone / activeMissions.length) * 100)
     : 0;
-  const totalMinutes = missions.reduce(
+  const totalMinutes = activeMissions.reduce(
     (sum, m) => sum + (m.estimatedMinutes ?? 0),
     0,
   );
@@ -137,7 +146,7 @@ export default async function Today({
             </div>
             <div className="shrink-0 text-right text-sm text-muted">
               <p>
-                ✅ {missionsDone}/{missions.length}
+                ✅ {missionsDone}/{activeMissions.length}
                 {isToday ? " today" : ""}
               </p>
               {totalLabel ? <p>~{totalLabel} planned</p> : null}
@@ -169,10 +178,16 @@ export default async function Today({
             <ul className="flex flex-col gap-2">
               {missions.map((m) => {
                 const done = m.status === "completed";
+                const deferred = m.status === "deferred";
+                const partial = m.status === "in_progress";
+                const skipped = m.status === "skipped";
+                const muted = done || deferred || skipped;
                 return (
                   <li
                     key={m.key}
-                    className="rounded-lg bg-surface-2 px-4 py-3"
+                    className={`rounded-lg bg-surface-2 px-4 py-3 ${
+                      deferred ? "opacity-70" : ""
+                    }`}
                   >
                     <div className="flex items-center justify-between">
                     <div className="flex min-w-0 items-center gap-3">
@@ -183,26 +198,42 @@ export default async function Today({
                       <div className="min-w-0">
                         <p
                           className={`truncate text-sm ${
-                            done ? "text-muted line-through" : "text-text"
+                            muted ? "text-muted line-through" : "text-text"
                           }`}
                         >
+                          {partial ? (
+                            <span className="mr-1 text-primary" title="Partially done">
+                              ◐
+                            </span>
+                          ) : null}
                           {m.title}
-                          {m.source === "block" ? (
+                          {m.source === "block" && !deferred ? (
                             <span className="ml-2 text-xs text-muted">
                               scheduled
                             </span>
                           ) : null}
                         </p>
-                        <p className="text-xs text-muted">
-                          {m.subjectName ?? "No subject"}
-                          {hoursLabel(m.estimatedMinutes)
-                            ? ` · ${hoursLabel(m.estimatedMinutes)}`
-                            : ""}
-                        </p>
+                        {deferred ? (
+                          <p className="text-xs text-muted">
+                            Moved to{" "}
+                            {m.deferredTo
+                              ? formatLongDate(m.deferredTo)
+                              : "a later day"}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted">
+                            {m.subjectName ?? "No subject"}
+                            {hoursLabel(m.estimatedMinutes)
+                              ? ` · ${hoursLabel(m.estimatedMinutes)}`
+                              : ""}
+                            {partial ? " · partially done" : ""}
+                            {skipped ? " · didn't do it" : ""}
+                          </p>
+                        )}
                         {m.description ? (
                           <p
                             className={`mt-0.5 text-xs text-muted ${
-                              done ? "line-through" : ""
+                              muted ? "line-through" : ""
                             }`}
                           >
                             {linkify(m.description).map((tok, i) =>
@@ -225,50 +256,7 @@ export default async function Today({
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      {done ? (
-                        <>
-                          <span className="text-sm text-success">✓ Done</span>
-                          <form action={uncompleteMissionAction}>
-                            <input
-                              type="hidden"
-                              name="missionId"
-                              value={m.missionId}
-                            />
-                            <button className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text">
-                              Undo
-                            </button>
-                          </form>
-                        </>
-                      ) : m.source === "mission" ? (
-                        <form action={completeMissionAction}>
-                          <input
-                            type="hidden"
-                            name="missionId"
-                            value={m.missionId}
-                          />
-                          <button className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg hover:opacity-90">
-                            Mark done
-                          </button>
-                        </form>
-                      ) : (
-                        <form action={completeScheduledAction}>
-                          <input
-                            type="hidden"
-                            name="studentId"
-                            value={active.id}
-                          />
-                          <input
-                            type="hidden"
-                            name="scheduleBlockId"
-                            value={m.scheduleBlockId}
-                          />
-                          <input type="hidden" name="date" value={viewDate} />
-                          <button className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg hover:opacity-90">
-                            Mark done
-                          </button>
-                        </form>
-                      )}
-                      {m.source === "mission" ? (
+                      {deferred ? (
                         <form action={deleteMissionAction}>
                           <input
                             type="hidden"
@@ -282,18 +270,210 @@ export default async function Today({
                             Remove
                           </button>
                         </form>
-                      ) : null}
+                      ) : done ? (
+                        <>
+                          <span className="text-sm text-success">✓ Done</span>
+                          <form action={uncompleteMissionAction}>
+                            <input
+                              type="hidden"
+                              name="missionId"
+                              value={m.missionId}
+                            />
+                            <button className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text">
+                              Undo
+                            </button>
+                          </form>
+                        </>
+                      ) : skipped ? (
+                        <>
+                          <span className="text-sm text-muted">
+                            ✗ Didn&apos;t do
+                          </span>
+                          <form action={setMissionProgressAction}>
+                            <input
+                              type="hidden"
+                              name="missionId"
+                              value={m.missionId}
+                            />
+                            <input
+                              type="hidden"
+                              name="status"
+                              value="not_started"
+                            />
+                            <button className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-text">
+                              Undo
+                            </button>
+                          </form>
+                          <form action={deleteMissionAction}>
+                            <input
+                              type="hidden"
+                              name="missionId"
+                              value={m.missionId}
+                            />
+                            <button
+                              className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:border-danger hover:text-danger"
+                              aria-label="Remove mission"
+                            >
+                              Remove
+                            </button>
+                          </form>
+                        </>
+                      ) : (
+                        <>
+                          {m.source === "mission" ? (
+                            <form action={completeMissionAction}>
+                              <input
+                                type="hidden"
+                                name="missionId"
+                                value={m.missionId}
+                              />
+                              <button className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg hover:opacity-90">
+                                Mark done
+                              </button>
+                            </form>
+                          ) : (
+                            <form action={completeScheduledAction}>
+                              <input
+                                type="hidden"
+                                name="studentId"
+                                value={active.id}
+                              />
+                              <input
+                                type="hidden"
+                                name="scheduleBlockId"
+                                value={m.scheduleBlockId}
+                              />
+                              <input type="hidden" name="date" value={viewDate} />
+                              <button className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-fg hover:opacity-90">
+                                Mark done
+                              </button>
+                            </form>
+                          )}
+                          {/* Secondary outcomes live in a quiet menu so "Mark
+                              done" stays the one encouraged action. */}
+                          <Menu summary="⋯" label="More actions">
+                              <form action={setMissionProgressAction}>
+                                {m.source === "mission" ? (
+                                  <input
+                                    type="hidden"
+                                    name="missionId"
+                                    value={m.missionId}
+                                  />
+                                ) : (
+                                  <>
+                                    <input
+                                      type="hidden"
+                                      name="studentId"
+                                      value={active.id}
+                                    />
+                                    <input
+                                      type="hidden"
+                                      name="scheduleBlockId"
+                                      value={m.scheduleBlockId}
+                                    />
+                                    <input
+                                      type="hidden"
+                                      name="date"
+                                      value={viewDate}
+                                    />
+                                  </>
+                                )}
+                                <input
+                                  type="hidden"
+                                  name="status"
+                                  value={partial ? "not_started" : "in_progress"}
+                                />
+                                <button className="w-full rounded px-2 py-1.5 text-left text-sm text-muted hover:bg-surface-2 hover:text-text">
+                                  {partial ? "Clear partial" : "Partially done"}
+                                </button>
+                              </form>
+                              <form action={setMissionProgressAction}>
+                                {m.source === "mission" ? (
+                                  <input
+                                    type="hidden"
+                                    name="missionId"
+                                    value={m.missionId}
+                                  />
+                                ) : (
+                                  <>
+                                    <input
+                                      type="hidden"
+                                      name="studentId"
+                                      value={active.id}
+                                    />
+                                    <input
+                                      type="hidden"
+                                      name="scheduleBlockId"
+                                      value={m.scheduleBlockId}
+                                    />
+                                    <input
+                                      type="hidden"
+                                      name="date"
+                                      value={viewDate}
+                                    />
+                                  </>
+                                )}
+                                <input
+                                  type="hidden"
+                                  name="status"
+                                  value="skipped"
+                                />
+                                <button className="w-full rounded px-2 py-1.5 text-left text-sm text-muted hover:bg-surface-2 hover:text-text">
+                                  Didn&apos;t do
+                                </button>
+                              </form>
+                              {m.source === "mission" ? (
+                                <form action={deleteMissionAction}>
+                                  <input
+                                    type="hidden"
+                                    name="missionId"
+                                    value={m.missionId}
+                                  />
+                                  <button className="w-full rounded px-2 py-1.5 text-left text-sm text-muted hover:bg-surface-2 hover:text-danger">
+                                    Remove
+                                  </button>
+                                </form>
+                              ) : null}
+                          </Menu>
+                        </>
+                      )}
                     </div>
                     </div>
-                    <MissionReflection
-                      reflection={m.reflection}
-                      missionId={m.source === "mission" ? m.missionId : undefined}
-                      studentId={m.source === "block" ? active.id : undefined}
-                      scheduleBlockId={
-                        m.source === "block" ? m.scheduleBlockId : undefined
-                      }
-                      date={m.source === "block" ? viewDate : undefined}
-                    />
+                    {deferred ? null : (
+                      <>
+                        <MissionReflection
+                          reflection={m.reflection}
+                          missionId={
+                            m.source === "mission" ? m.missionId : undefined
+                          }
+                          studentId={
+                            m.source === "block" ? active.id : undefined
+                          }
+                          scheduleBlockId={
+                            m.source === "block" ? m.scheduleBlockId : undefined
+                          }
+                          date={m.source === "block" ? viewDate : undefined}
+                        />
+                        {/* Move-to-a-later-date is offered only once a mission
+                            is marked partially done — the natural moment to push
+                            the unfinished remainder forward. */}
+                        {partial ? (
+                          <MissionDefer
+                            minDate={nextISODate(viewDate)}
+                            missionId={
+                              m.source === "mission" ? m.missionId : undefined
+                            }
+                            studentId={
+                              m.source === "block" ? active.id : undefined
+                            }
+                            scheduleBlockId={
+                              m.source === "block" ? m.scheduleBlockId : undefined
+                            }
+                            date={m.source === "block" ? viewDate : undefined}
+                          />
+                        ) : null}
+                      </>
+                    )}
                   </li>
                 );
               })}

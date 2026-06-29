@@ -9,7 +9,6 @@ import {
 } from "@/lib/missions/recurrence";
 import type { Student, ScheduleBlock } from "@/lib/db/types";
 import { AppHeader } from "../_components/AppHeader";
-import { AddBlockForm } from "./_components/AddBlockForm";
 import { EditBlockForm } from "./_components/EditBlockForm";
 import { deleteBlockAction } from "./actions";
 
@@ -66,7 +65,7 @@ export default async function SchedulePage({
   const prevWeek = addDaysISO(weekStart, -7);
   const nextWeek = addDaysISO(weekStart, 7);
 
-  // Subjects/tracks/tasks for the add form.
+  // Subjects/tracks/tasks for the per-block edit form.
   const { data: subjectsData } = await supabase
     .from("subjects")
     .select("id,name,color")
@@ -121,19 +120,6 @@ export default async function SchedulePage({
         <>
           {active ? (
             <>
-              <section className="mb-6 rounded-xl border border-border bg-surface p-5">
-                <h2 className="mb-3 text-sm font-semibold text-text">
-                  Add a block for {active.name}
-                </h2>
-                <AddBlockForm
-                  studentId={active.id}
-                  defaultDate={today}
-                  subjects={subjects}
-                  tracks={tracks}
-                  tasks={tasks}
-                />
-              </section>
-
               <div className="mb-4 flex items-center justify-between">
                 <Link
                   href={sw(prevWeek)}

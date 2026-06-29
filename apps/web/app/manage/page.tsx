@@ -5,8 +5,6 @@ import { withStudent } from "@/lib/nav/withStudent";
 import { AppHeader } from "../_components/AppHeader";
 import { GlanceStrip } from "../_components/GlanceStrip";
 import { CreateTaskForm } from "../_components/CreateTaskForm";
-import { AssignTaskForm } from "../_components/AssignTaskForm";
-import { TaskList } from "../_components/TaskList";
 import { studentGlance } from "@/lib/dashboard/glance";
 import type { Student } from "@/lib/db/types";
 
@@ -14,9 +12,9 @@ export const metadata = { title: "Manage · LockIn" };
 
 /**
  * Manage — the planning focus (Stage 8). Decluttered to the all-students glance
- * and the admin task forms; the per-feature pages (Schedule, Settings, Quests,
- * Homework, Coding, Mistakes) stay reachable by URL but are no longer surfaced
- * here.
+ * and a single create+assign task form; the per-feature pages (Schedule,
+ * Settings, Quests, Homework, Coding, Mistakes) stay reachable by URL but are no
+ * longer surfaced here.
  */
 export default async function ManagePage({
   searchParams,
@@ -40,10 +38,25 @@ export default async function ManagePage({
     students.map((s) => studentGlance(supabase, s, today)),
   );
 
-  const { data: subjects } = await supabase
+  const { data: allSubjects } = await supabase
     .from("subjects")
     .select("id,name")
     .order("name", { ascending: true });
+
+  // Scope the "Create a task" subject picker to the active student's chosen
+  // subjects — those marked primary/bonus in Settings (`student_subjects`
+  // priority_type != 'inactive'; absence = inactive, ADR 0005). Without an
+  // active student the picker is empty (the form is gated on `active` anyway).
+  let subjects: { id: string; name: string }[] = [];
+  if (active) {
+    const { data: ss } = await supabase
+      .from("student_subjects")
+      .select("subject_id")
+      .eq("student_id", active.id)
+      .neq("priority_type", "inactive");
+    const activeSubjects = new Set((ss ?? []).map((r) => r.subject_id));
+    subjects = (allSubjects ?? []).filter((s) => activeSubjects.has(s.id));
+  }
 
   // Active tracks for the "Create a task" form's track picker (RLS already
   // limits reads to default-or-own; hidden tracks are excluded).
@@ -53,77 +66,6 @@ export default async function ManagePage({
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
-
-  // Tasks for the assign form, scoped to the active student's *active* subjects
-  // & tracks (priority not "inactive"; absence => inactive, per ADR 0005 — the
-  // same rule Settings uses). A task is offered if its most-specific attribution
-  // is on for the student; an unattributed (generic) task is always offered.
-  const { data: tasksData } = await supabase
-    .from("tasks")
-    .select("id,title,subject_id,subject_track_id")
-    .order("created_at", { ascending: false });
-  type TaskRow = {
-    id: string;
-    title: string;
-    subject_id: string | null;
-    subject_track_id: string | null;
-  };
-  const allTasks = (tasksData ?? []) as TaskRow[];
-
-  let tasks: { id: string; title: string }[] = [];
-  if (active) {
-    const { data: ss } = await supabase
-      .from("student_subjects")
-      .select("subject_id")
-      .eq("student_id", active.id)
-      .neq("priority_type", "inactive");
-    const activeSubjects = new Set((ss ?? []).map((r) => r.subject_id));
-
-    const { data: st } = await supabase
-      .from("student_subject_tracks")
-      .select("subject_track_id")
-      .eq("student_id", active.id)
-      .neq("priority_type", "inactive");
-    const activeTracks = new Set((st ?? []).map((r) => r.subject_track_id));
-
-    tasks = allTasks
-      .filter((t) =>
-        t.subject_track_id
-          ? activeTracks.has(t.subject_track_id)
-          : t.subject_id
-            ? activeSubjects.has(t.subject_id)
-            : true,
-      )
-      .map((t) => ({ id: t.id, title: t.title }));
-  }
-
-  // Task list for the "Tasks" panel (rename/delete), scoped to the active
-  // student: a task belongs to a student once it's been assigned to them
-  // (`task_assignments`). Tasks are parent-owned and shared, so without this the
-  // panel showed every student's tasks at once. Labelled by track or subject
-  // name (track wins), built from the already-fetched subjects/tracks.
-  const subjectName = new Map((subjects ?? []).map((s) => [s.id, s.name]));
-  const trackName = new Map((tracks ?? []).map((t) => [t.id, t.name]));
-  let manageTasks: { id: string; title: string; label: string | null }[] = [];
-  if (active) {
-    const { data: assigns } = await supabase
-      .from("task_assignments")
-      .select("task_id")
-      .eq("student_id", active.id);
-    const assignedTaskIds = new Set(
-      (assigns ?? []).map((r) => r.task_id as string),
-    );
-    manageTasks = allTasks
-      .filter((t) => assignedTaskIds.has(t.id))
-      .map((t) => ({
-        id: t.id,
-        title: t.title,
-        label:
-          (t.subject_track_id ? trackName.get(t.subject_track_id) : null) ??
-          (t.subject_id ? subjectName.get(t.subject_id) : null) ??
-          null,
-      }));
-  }
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -162,26 +104,17 @@ export default async function ManagePage({
 
       {/* Admin */}
       <section className="flex flex-col gap-6">
-        <Panel title={active ? `${active.name}'s tasks` : "Tasks"}>
+        <Panel title={active ? `Create a task for ${active.name}` : "Create a task"}>
           {active ? (
-            <TaskList tasks={manageTasks} />
-          ) : (
-            <p className="text-sm text-muted">Add a student first.</p>
-          )}
-        </Panel>
-        <Panel title="Assign a task">
-          {active ? (
-            <AssignTaskForm
+            <CreateTaskForm
+              subjects={subjects ?? []}
+              tracks={tracks ?? []}
               studentId={active.id}
-              tasks={tasks ?? []}
               today={today}
             />
           ) : (
             <p className="text-sm text-muted">Add a student first.</p>
           )}
-        </Panel>
-        <Panel title="Create a task">
-          <CreateTaskForm subjects={subjects ?? []} tracks={tracks ?? []} />
         </Panel>
       </section>
     </main>

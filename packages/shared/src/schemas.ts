@@ -81,6 +81,60 @@ export const MissionDeleteInput = z.object({
 export type MissionDeleteInput = z.infer<typeof MissionDeleteInput>;
 
 /**
+ * Set a mission's progress status. `in_progress` = "partially done" (started, not
+ * finished); `skipped` = "didn't do it" (explicitly not done, kept for history);
+ * `not_started` clears either. Completion stays on its own command
+ * (`mission.complete`, which touches the streak). Targets a persisted `missionId`
+ * or a *virtual* scheduled block via (`studentId`, `scheduleBlockId`, `date`) —
+ * which the handler materializes first (mirrors `MissionSetReflectionInput`).
+ */
+export const MissionSetStatusInput = z
+  .object({
+    missionId: uuid.optional(),
+    studentId: uuid.optional(),
+    scheduleBlockId: uuid.optional(),
+    date: isoDate.optional(),
+    status: z.enum(["not_started", "in_progress", "skipped"]),
+  })
+  .refine(
+    (d) =>
+      Boolean(d.missionId) ||
+      Boolean(d.studentId && d.scheduleBlockId && d.date),
+    {
+      message:
+        "Provide missionId, or studentId + scheduleBlockId + date for a scheduled block.",
+    },
+  );
+export type MissionSetStatusInput = z.infer<typeof MissionSetStatusInput>;
+
+/**
+ * Move a mission to a later date with an optional note. Leaves a `deferred`
+ * tombstone on the source date and creates/updates a fresh mission on `toDate`
+ * carrying the note. Targets a persisted `missionId`, or a virtual scheduled block
+ * via (`studentId`, `scheduleBlockId`, `date` = the source date). `toDate` must be
+ * strictly after the source date (enforced again in the handler).
+ */
+export const MissionDeferInput = z
+  .object({
+    missionId: uuid.optional(),
+    studentId: uuid.optional(),
+    scheduleBlockId: uuid.optional(),
+    date: isoDate.optional(),
+    toDate: isoDate,
+    note: z.string().trim().max(2000).optional(),
+  })
+  .refine(
+    (d) =>
+      Boolean(d.missionId) ||
+      Boolean(d.studentId && d.scheduleBlockId && d.date),
+    {
+      message:
+        "Provide missionId, or studentId + scheduleBlockId + date for a scheduled block.",
+    },
+  );
+export type MissionDeferInput = z.infer<typeof MissionDeferInput>;
+
+/**
  * A student's relationship to a subject/track (ADR 0005). `primary` = core,
  * `bonus` = optional/enrichment, `inactive` = explicitly off. Absence of a row
  * also means inactive.

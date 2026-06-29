@@ -24,6 +24,8 @@ export const COMMANDS = {
   missionCompleteScheduled: "mission.completeScheduled",
   missionUncomplete: "mission.uncomplete",
   missionDelete: "mission.delete",
+  missionSetStatus: "mission.setStatus",
+  missionDefer: "mission.defer",
   missionSetReflection: "mission.setReflection",
   weeklyGoalCreate: "weeklyGoal.create",
   weeklyGoalUpdate: "weeklyGoal.update",

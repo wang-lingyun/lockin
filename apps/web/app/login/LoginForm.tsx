@@ -22,7 +22,11 @@ export function LoginForm() {
           type="email"
           name="email"
           required
-          autoComplete="email"
+          // Suppress the browser's inline identity/password-manager button
+          // (the little person + "1 saved login" badge) on this field.
+          autoComplete="off"
+          data-1p-ignore
+          data-lpignore="true"
           className="rounded-md border border-border bg-bg px-3 py-2 text-text outline-none focus:border-primary"
         />
       </label>

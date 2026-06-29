@@ -7,6 +7,8 @@ import type {
   MissionCompleteInput,
   MissionUncompleteInput,
   MissionDeleteInput,
+  MissionSetStatusInput,
+  MissionDeferInput,
   SubjectCreateInput,
   SubjectUpdateInput,
   SubjectDeleteInput,
@@ -563,6 +565,168 @@ export async function missionSetReflection(
     .from("daily_missions")
     .update({ student_reflection: input.reflection })
     .eq("id", missionId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as DailyMission;
+}
+
+type BlockMissionFields = Pick<
+  ScheduleBlock,
+  "id" | "student_id" | "task_id" | "subject_id" | "subject_track_id"
+>;
+
+/**
+ * Ensure a dated mission row exists for a schedule block (idempotent), returning
+ * its id and the block fields carried onto the mission. This is the
+ * upsert-then-select used to turn a *virtual* (derived-on-read) block occurrence
+ * into a persisted mission before status/notes can be written to it.
+ */
+async function materializeBlockMission(
+  ctx: CommandContext,
+  scheduleBlockId: string,
+  date: string,
+): Promise<{ missionId: string; block: BlockMissionFields }> {
+  const { data: block, error: blockErr } = await ctx.supabase
+    .from("schedule_blocks")
+    .select("id, student_id, task_id, subject_id, subject_track_id")
+    .eq("id", scheduleBlockId)
+    .single();
+  if (blockErr) throw new Error(blockErr.message);
+  const b = block as BlockMissionFields;
+
+  await ctx.supabase.from("daily_missions").upsert(
+    {
+      student_id: b.student_id,
+      task_id: b.task_id,
+      subject_id: b.subject_id,
+      subject_track_id: b.subject_track_id,
+      schedule_block_id: b.id,
+      date,
+      status: "not_started",
+    },
+    { onConflict: "student_id,date,schedule_block_id", ignoreDuplicates: true },
+  );
+
+  const { data: mission, error: missionErr } = await ctx.supabase
+    .from("daily_missions")
+    .select("id")
+    .eq("student_id", b.student_id)
+    .eq("date", date)
+    .eq("schedule_block_id", b.id)
+    .single();
+  if (missionErr) throw new Error(missionErr.message);
+  return { missionId: (mission as { id: string }).id, block: b };
+}
+
+/**
+ * Set a mission's progress to `not_started` or `in_progress` ("partially done").
+ * Materializes a virtual scheduled block first. Completion stays on
+ * `missionComplete` (the streak-aware RPC); this only ever clears `completed_at`.
+ */
+export async function missionSetStatus(
+  input: MissionSetStatusInput,
+  ctx: CommandContext,
+): Promise<DailyMission> {
+  let missionId = input.missionId ?? null;
+  if (!missionId) {
+    ({ missionId } = await materializeBlockMission(
+      ctx,
+      input.scheduleBlockId!,
+      input.date!,
+    ));
+  }
+
+  const { data, error } = await ctx.supabase
+    .from("daily_missions")
+    .update({ status: input.status, completed_at: null })
+    .eq("id", missionId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as DailyMission;
+}
+
+/**
+ * Move a mission to a later date with an optional note: create/refresh a mission
+ * on `toDate` carrying the note, and tombstone the source row (`status:deferred`,
+ * `deferred_to`). The tombstone both records the move and — for schedule blocks —
+ * keeps the source day's occurrence from regenerating (Today derives occurrences
+ * on read and skips any date that already has a persisted mission, ADR 0006).
+ */
+export async function missionDefer(
+  input: MissionDeferInput,
+  ctx: CommandContext,
+): Promise<DailyMission> {
+  // Resolve the source mission id + the fields we carry to the target date.
+  let source: {
+    id: string;
+    student_id: string;
+    task_id: string | null;
+    subject_id: string | null;
+    subject_track_id: string | null;
+    schedule_block_id: string | null;
+    date: string;
+  };
+
+  if (input.missionId) {
+    const { data, error } = await ctx.supabase
+      .from("daily_missions")
+      .select(
+        "id, student_id, task_id, subject_id, subject_track_id, schedule_block_id, date",
+      )
+      .eq("id", input.missionId)
+      .single();
+    if (error) throw new Error(error.message);
+    source = data as typeof source;
+  } else {
+    const { missionId, block } = await materializeBlockMission(
+      ctx,
+      input.scheduleBlockId!,
+      input.date!,
+    );
+    source = {
+      id: missionId,
+      student_id: block.student_id,
+      task_id: block.task_id,
+      subject_id: block.subject_id,
+      subject_track_id: block.subject_track_id,
+      schedule_block_id: block.id,
+      date: input.date!,
+    };
+  }
+
+  if (input.toDate <= source.date) {
+    throw new Error("Pick a later date.");
+  }
+
+  // Target row on the new date, carrying the note. Upsert so moving onto a day
+  // whose block-occurrence is already materialized updates it rather than
+  // colliding on the (student, date, block) unique key.
+  const { error: upsertErr } = await ctx.supabase.from("daily_missions").upsert(
+    {
+      student_id: source.student_id,
+      task_id: source.task_id,
+      subject_id: source.subject_id,
+      subject_track_id: source.subject_track_id,
+      schedule_block_id: source.schedule_block_id,
+      date: input.toDate,
+      status: "not_started",
+      notes: input.note ?? null,
+    },
+    { onConflict: "student_id,date,schedule_block_id" },
+  );
+  if (upsertErr) throw new Error(upsertErr.message);
+
+  // Tombstone the source occurrence.
+  const { data, error } = await ctx.supabase
+    .from("daily_missions")
+    .update({
+      status: "deferred",
+      deferred_to: input.toDate,
+      notes: input.note ?? null,
+    })
+    .eq("id", source.id)
     .select()
     .single();
   if (error) throw new Error(error.message);

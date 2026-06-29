@@ -262,7 +262,11 @@ apply to any subject, not just Math.
 - **Each track can be scheduled independently** — see §10.16.
 
 ### 10.5 Today's Missions
-Daily task list per student. Each mission: student, subject, task title, description, estimated time, difficulty, XP value, status (not started / in progress / completed), notes, completion timestamp.
+Daily task list per student. Each mission: student, subject, task title, description, estimated time, difficulty, XP value, status (not started / in progress / completed / deferred / skipped), notes, completion timestamp.
+
+- **Partially done** = `in_progress`. It is a started-but-unfinished marker; it does **not** count toward the day's progress bar or the done/total tally (only `completed` does). It can be toggled on and off.
+- **Didn't do it** = `skipped`. An explicit not-done outcome (vs. `not_started` = still could be done), kept for history/AI analysis and reversible via Undo. It **counts as not-done** — it stays in the day's denominator (unlike a moved tombstone) so the percentage reflects the miss. Available on scheduled blocks too (materialized first).
+- **Move to a further date** defers a mission to a later day with an optional note. The original day keeps a `deferred` **tombstone** ("Moved to {date}", `deferred_to` set) — out of the day's progress/totals but preserved for history; a fresh mission is created on the target date carrying the note. The tombstone also keeps a recurring schedule block from regenerating that day's occurrence (since occurrences are derived on read and skipped where a mission row already exists — see §13).
 
 ### 10.6 Weekly Quest Board
 Weekly goals per student, mostly outcome-based. Each goal: student, subject, goal title, target number, current progress, unit, due date, status, completion percentage.
@@ -376,7 +380,7 @@ Core tables/objects (field lists below are authoritative for the MVP schema):
 6. **StudentSubject** — id, student_id, subject_id, priority_type (primary/bonus/inactive), created_at, updated_at
 7. **Task** — id, title, description, subject_id, task_type, difficulty, xp_value, estimated_minutes, repeatable, optional_link, created_by, created_at, updated_at
 8. **TaskAssignment** — id, task_id, student_id, assigned_by, assigned_date, due_date, status, created_at, updated_at
-9. **DailyMission** — id, student_id, task_id (nullable), subject_id, subject_track_id (nullable), schedule_block_id (nullable), date, status, completed_at, notes, parent_feedback, student_reflection, created_at, updated_at  *(unique on student_id + date + schedule_block_id to prevent duplicate lazy generation; null schedule_block_id = ad-hoc mission)*
+9. **DailyMission** — id, student_id, task_id (nullable), subject_id, subject_track_id (nullable), schedule_block_id (nullable), date, status (not_started/in_progress/completed/deferred/skipped), completed_at, deferred_to (nullable), notes, parent_feedback, student_reflection, created_at, updated_at  *(unique on student_id + date + schedule_block_id to prevent duplicate lazy generation; null schedule_block_id = ad-hoc mission. A `deferred` row is a "moved to {deferred_to}" tombstone; `skipped` = explicitly not done — see §10.5)*
 10. **WeeklyGoal** — id, student_id, week_start_date, title, subject_id, target_value, current_value, unit, due_date, status, created_at, updated_at
 11. **HomeworkSubmission** — id, student_id, subject_id, topic, assignment_title, submission_date, raw_text, file_url, image_url, source_type, student_notes, parent_notes, review_status, ai_analysis_status, ai_summary, detected_skills, detected_mistakes, recommended_next_steps, created_at, updated_at
 12. **MistakeBankEntry** — id, student_id, subject_id, homework_submission_id, title, topic, mistake_description, correct_idea, mistake_type, retry_date, status, created_at, updated_at

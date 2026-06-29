@@ -18,6 +18,7 @@ export type TodayMission = {
   estimatedMinutes: number | null;
   reflection: string | null;
   status: MissionStatus;
+  deferredTo: string | null;
   missionId?: string;
   scheduleBlockId?: string;
 };
@@ -63,7 +64,10 @@ export async function getTodaysMissions(
       m.task?.title ??
       (m.schedule_block_id ? blockById.get(m.schedule_block_id)?.title : null) ??
       "Untitled task",
+    // Prefer the mission's own note (e.g. a note carried over when this mission
+    // was moved here from another day) over the task/block description.
     description:
+      m.notes ??
       m.task?.description ??
       (m.schedule_block_id
         ? blockById.get(m.schedule_block_id)?.notes ?? null
@@ -73,6 +77,7 @@ export async function getTodaysMissions(
     estimatedMinutes: m.task?.estimated_minutes ?? null,
     reflection: m.student_reflection ?? null,
     status: m.status,
+    deferredTo: m.deferred_to ?? null,
     missionId: m.id,
   }));
 
@@ -94,6 +99,7 @@ export async function getTodaysMissions(
       estimatedMinutes: b.estimated_minutes ?? null,
       reflection: null,
       status: "not_started",
+      deferredTo: null,
       scheduleBlockId: b.id,
     });
   }

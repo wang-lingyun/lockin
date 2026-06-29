@@ -29,8 +29,8 @@ function timeOf(iso: string | null): string {
 }
 
 /**
- * Edit an existing schedule block. Mirrors AddBlockForm but prefilled from the
- * block, with the stored RRULE decoded back into the friendly repeat preset.
+ * Edit an existing schedule block, prefilled from the block, with the stored
+ * RRULE decoded back into the friendly repeat preset.
  * Times are read/written as literal HH:MM (the app's Pacific-as-Z convention).
  */
 export function EditBlockForm({
@@ -211,6 +211,17 @@ export function EditBlockForm({
           </label>
         ) : null}
       </div>
+
+      <label className="flex flex-col gap-1">
+        <span className="text-xs text-muted">Notes (optional)</span>
+        <textarea
+          name="notes"
+          rows={2}
+          defaultValue={block.notes ?? ""}
+          className={`${input} resize-y`}
+          placeholder="Links, instructions, page numbers…"
+        />
+      </label>
 
       <div className="flex items-center gap-3">
         <button
