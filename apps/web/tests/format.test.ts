@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { hoursLabel } from "@/lib/format";
+import { hoursLabel, timeRangeLabel } from "@/lib/format";
 import { formatLongDate } from "@/lib/date";
 
 describe("hoursLabel", () => {
@@ -27,6 +27,41 @@ describe("hoursLabel", () => {
     expect(hoursLabel(null)).toBeNull();
     expect(hoursLabel(undefined)).toBeNull();
     expect(hoursLabel(-30)).toBeNull();
+  });
+});
+
+describe("timeRangeLabel", () => {
+  it("collapses the meridiem when start and end share it", () => {
+    expect(timeRangeLabel("2026-06-29T08:00:00Z", "2026-06-29T10:00:00Z")).toBe(
+      "8:00–10:00 AM",
+    );
+  });
+
+  it("keeps both meridiems across noon", () => {
+    expect(timeRangeLabel("2026-06-29T11:00:00Z", "2026-06-29T13:30:00Z")).toBe(
+      "11:00 AM – 1:30 PM",
+    );
+  });
+
+  it("renders midnight/noon as 12 and pads minutes", () => {
+    expect(timeRangeLabel("2026-06-29T00:05:00Z", "2026-06-29T12:00:00Z")).toBe(
+      "12:05 AM – 12:00 PM",
+    );
+  });
+
+  it("reads a +00:00 offset the same as Z", () => {
+    expect(
+      timeRangeLabel("2026-06-29T08:00:00+00:00", "2026-06-29T10:00:00+00:00"),
+    ).toBe("8:00–10:00 AM");
+  });
+
+  it("shows just the start when there's no end", () => {
+    expect(timeRangeLabel("2026-06-29T08:00:00Z", null)).toBe("8:00 AM");
+  });
+
+  it("returns null for an untimed / all-day item", () => {
+    expect(timeRangeLabel(null, null)).toBeNull();
+    expect(timeRangeLabel(undefined, "2026-06-29T10:00:00Z")).toBeNull();
   });
 });
 

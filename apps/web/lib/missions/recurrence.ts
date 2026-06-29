@@ -38,11 +38,23 @@ export function blockOccursOn(block: ScheduleBlock, dateISO: string): boolean {
   return block.start_at.slice(0, 10) === dateISO;
 }
 
-/** Sort key: timed blocks by start, then all-day/untimed, then title. */
+/**
+ * Minutes-from-midnight of a block's wall-clock start, or +Infinity when it's
+ * all-day / untimed. Compares the *time of day* only — a recurring block's
+ * `start_at` carries its anchor date, so comparing full datetimes would order
+ * occurrences by that anchor instead of by their clock time.
+ */
+function startOfDayMinutes(b: ScheduleBlock): number {
+  if (b.all_day || !b.start_at) return Number.POSITIVE_INFINITY;
+  const d = new Date(b.start_at); // stored floating-UTC → read back in UTC
+  return d.getUTCHours() * 60 + d.getUTCMinutes();
+}
+
+/** Sort key: timed blocks by clock time, then all-day/untimed last, then title. */
 function compareBlocks(a: ScheduleBlock, b: ScheduleBlock): number {
-  const at = a.all_day ? "" : (a.start_at ?? "");
-  const bt = b.all_day ? "" : (b.start_at ?? "");
-  if (at !== bt) return at < bt ? -1 : 1;
+  const at = startOfDayMinutes(a);
+  const bt = startOfDayMinutes(b);
+  if (at !== bt) return at - bt;
   return a.title.localeCompare(b.title);
 }
 

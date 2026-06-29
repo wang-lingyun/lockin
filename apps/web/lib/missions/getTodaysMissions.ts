@@ -19,9 +19,28 @@ export type TodayMission = {
   reflection: string | null;
   status: MissionStatus;
   deferredTo: string | null;
+  // Scheduled wall-clock window (floating UTC ISO), when the item comes from a
+  // timed schedule block. Null for ad-hoc or all-day items — those sort last.
+  startAt: string | null;
+  endAt: string | null;
   missionId?: string;
   scheduleBlockId?: string;
 };
+
+/** A block's timed window, or nulls when it's all-day / untimed. */
+function blockWindow(
+  b: { start_at: string | null; end_at: string | null; all_day: boolean } | undefined,
+): { startAt: string | null; endAt: string | null } {
+  if (!b || b.all_day) return { startAt: null, endAt: null };
+  return { startAt: b.start_at ?? null, endAt: b.end_at ?? null };
+}
+
+/** Minutes-from-midnight of a floating UTC ISO time, for ordering. */
+function timeOfDay(iso: string | null): number | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return d.getUTCHours() * 60 + d.getUTCMinutes();
+}
 
 type BlockWithJoins = ScheduleBlock & {
   task: { id: string; title: string } | null;
@@ -57,29 +76,27 @@ export async function getTodaysMissions(
   // 1. Persisted missions for the day. A mission materialized from a schedule
   // block has no task, so fall back to the block's own title (keeping Today in
   // sync with the weekly schedule) before the generic "Untitled task".
-  const out: TodayMission[] = missions.map((m) => ({
-    source: "mission",
-    key: `m:${m.id}`,
-    title:
-      m.task?.title ??
-      (m.schedule_block_id ? blockById.get(m.schedule_block_id)?.title : null) ??
-      "Untitled task",
-    // Prefer the mission's own note (e.g. a note carried over when this mission
-    // was moved here from another day) over the task/block description.
-    description:
-      m.notes ??
-      m.task?.description ??
-      (m.schedule_block_id
-        ? blockById.get(m.schedule_block_id)?.notes ?? null
-        : null),
-    subjectName: m.subject?.name ?? null,
-    subjectColor: m.subject?.color ?? null,
-    estimatedMinutes: m.task?.estimated_minutes ?? null,
-    reflection: m.student_reflection ?? null,
-    status: m.status,
-    deferredTo: m.deferred_to ?? null,
-    missionId: m.id,
-  }));
+  const out: TodayMission[] = missions.map((m) => {
+    const block = m.schedule_block_id
+      ? blockById.get(m.schedule_block_id)
+      : undefined;
+    return {
+      source: "mission",
+      key: `m:${m.id}`,
+      title: m.task?.title ?? block?.title ?? "Untitled task",
+      // Prefer the mission's own note (e.g. a note carried over when this mission
+      // was moved here from another day) over the task/block description.
+      description: m.notes ?? m.task?.description ?? block?.notes ?? null,
+      subjectName: m.subject?.name ?? null,
+      subjectColor: m.subject?.color ?? null,
+      estimatedMinutes: m.task?.estimated_minutes ?? null,
+      reflection: m.student_reflection ?? null,
+      status: m.status,
+      deferredTo: m.deferred_to ?? null,
+      ...blockWindow(block),
+      missionId: m.id,
+    };
+  });
 
   // 2. Schedule blocks occurring today without a persisted mission yet.
   const materialized = new Set(
@@ -100,9 +117,20 @@ export async function getTodaysMissions(
       reflection: null,
       status: "not_started",
       deferredTo: null,
+      ...blockWindow(b),
       scheduleBlockId: b.id,
     });
   }
 
-  return out;
+  // Order by scheduled start time (earliest first); untimed / all-day items go
+  // to the very end, each group keeping its prior (created_at / block) order.
+  return out
+    .map((m, i) => ({ m, i, t: timeOfDay(m.startAt) }))
+    .sort((a, b) => {
+      if (a.t === null && b.t === null) return a.i - b.i;
+      if (a.t === null) return 1;
+      if (b.t === null) return -1;
+      return a.t !== b.t ? a.t - b.t : a.i - b.i;
+    })
+    .map((x) => x.m);
 }

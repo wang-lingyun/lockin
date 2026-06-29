@@ -6,7 +6,7 @@ import {
   previousISODate,
   nextISODate,
 } from "@/lib/date";
-import { hoursLabel } from "@/lib/format";
+import { hoursLabel, timeRangeLabel } from "@/lib/format";
 import { linkify } from "@/lib/linkify";
 import { withStudent } from "@/lib/nav/withStudent";
 import {
@@ -182,6 +182,7 @@ export default async function Today({
                 const partial = m.status === "in_progress";
                 const skipped = m.status === "skipped";
                 const muted = done || deferred || skipped;
+                const timeText = timeRangeLabel(m.startAt, m.endAt);
                 return (
                   <li
                     key={m.key}
@@ -223,6 +224,11 @@ export default async function Today({
                         ) : (
                           <p className="text-xs text-muted">
                             {m.subjectName ?? "No subject"}
+                            {timeText ? (
+                              <span className="text-text"> · {timeText}</span>
+                            ) : (
+                              ""
+                            )}
                             {hoursLabel(m.estimatedMinutes)
                               ? ` · ${hoursLabel(m.estimatedMinutes)}`
                               : ""}

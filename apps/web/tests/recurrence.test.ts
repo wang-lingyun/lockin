@@ -126,4 +126,40 @@ describe("expandWeek", () => {
     expect(week[4].blocks.map((b) => b.id)).toEqual(["a"]); // Fri
     expect(week[6].blocks).toHaveLength(0); // Sun
   });
+
+  it("orders a day by clock time, not by a recurring block's anchor date", () => {
+    // Swim recurs daily from an early-week anchor at a LATE time; AMC is a
+    // one-off later in the week at an EARLY time. On Wednesday both occur, and
+    // the early-clock-time AMC must come first (regression: comparing full
+    // datetimes ordered Swim first because its anchor date is earlier).
+    const swim = block({
+      id: "swim",
+      title: "Swim practice",
+      start_at: `${MON}T17:45:00.000Z`,
+      recurrence_rule: "FREQ=DAILY",
+    });
+    const amc = block({
+      id: "amc",
+      title: "AMC 10 Mock",
+      start_at: "2026-06-03T08:00:00.000Z", // Wednesday
+    });
+    const week = expandWeek([swim, amc], MON);
+    expect(week[2].blocks.map((b) => b.id)).toEqual(["amc", "swim"]); // Wed
+  });
+
+  it("sorts all-day / untimed blocks after timed ones", () => {
+    const allDay = block({
+      id: "comp",
+      title: "Competition",
+      start_at: `${MON}T00:00:00.000Z`,
+      all_day: true,
+    });
+    const timed = block({
+      id: "class",
+      title: "Class",
+      start_at: `${MON}T09:00:00.000Z`,
+    });
+    const week = expandWeek([allDay, timed], MON);
+    expect(week[0].blocks.map((b) => b.id)).toEqual(["class", "comp"]); // Mon
+  });
 });
